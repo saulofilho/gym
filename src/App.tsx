@@ -9,6 +9,7 @@ import { NutritionHub } from './components/NutritionHub';
 import { CoachChat } from './components/CoachChat';
 import { PremiumModal } from './components/PremiumModal';
 import { CustomWorkoutGenerator } from './components/CustomWorkoutGenerator';
+import { GitHubPagesModal } from './components/GitHubPagesModal';
 import { Exercise, WorkoutProgram } from './types';
 import { Dumbbell, Sparkles, Award, TrendingUp, ShieldCheck, Heart, Github } from 'lucide-react';
 
@@ -19,6 +20,7 @@ const AppContent: React.FC = () => {
   const [selectedExerciseForModal, setSelectedExerciseForModal] = useState<Exercise | null>(null);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [isAiGeneratorOpen, setIsAiGeneratorOpen] = useState(false);
+  const [isGitHubPagesModalOpen, setIsGitHubPagesModalOpen] = useState(false);
 
   const handleStartExerciseQuick = (exercise: Exercise) => {
     // Will start quick workout with this exercise
@@ -52,6 +54,7 @@ const AppContent: React.FC = () => {
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
         onOpenPremiumModal={() => setIsPremiumModalOpen(true)}
+        onOpenGitHubPagesModal={() => setIsGitHubPagesModalOpen(true)}
       />
 
       {/* Main Content Body */}
@@ -175,6 +178,11 @@ const AppContent: React.FC = () => {
         onStartGeneratedWorkout={(prog) => startWorkout(prog)}
       />
 
+      <GitHubPagesModal
+        isOpen={isGitHubPagesModalOpen}
+        onClose={() => setIsGitHubPagesModalOpen(false)}
+      />
+
       {/* Footer */}
       <footer className="border-t border-[#222222] bg-[#0A0A0A] py-8 text-neutral-500 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
@@ -186,12 +194,18 @@ const AppContent: React.FC = () => {
             <span className="text-neutral-500">• Treinamento Inteligente & Nutrição Científica</span>
           </div>
 
-          <div className="flex items-center gap-4 text-neutral-400">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-neutral-400">
             <span>Iniciante ao Avançado</span>
             <span className="text-neutral-600">•</span>
             <span>Progressão de Carga</span>
             <span className="text-neutral-600">•</span>
-            <span>Design Elegant Dark</span>
+            <button
+              onClick={() => setIsGitHubPagesModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-[#D4FF00] hover:underline font-semibold"
+            >
+              <Github className="w-3.5 h-3.5" />
+              <span>Versão GitHub Pages</span>
+            </button>
           </div>
         </div>
       </footer>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AcademiaPro — Edição GitHub Pages (Treino, 1RM, Dica do Dia & Nutrição)</title>
+  <meta name="description" content="Versão estática 100% compatível com GitHub Pages do AcademiaPro: fichas de treino, registro de cargas, Dica do Dia (Volume + Hidratação + Sono), Calculadora de 1RM e Nutrição." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background:#0A0A0A; color:#EDEDED; font-family:'Inter',sans-serif; }
+    .font-display { font-family:'Space Grotesk',sans-serif; }
+    .font-mono-num { font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-[#D4FF00] selection:text-black">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 bg-[#111111]/95 backdrop-blur border-b border-[#222222]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-md bg-[#D4FF00] text-black flex items-center justify-center font-bold shadow-md">🏋️</div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-bold tracking-tight text-white font-display">Academia<span class="text-[#D4FF00]">Pro</span></span>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#D4FF00]/15 text-[#D4FF00] border border-[#D4FF00]/30">GitHub Pages</span>
+          </div>
+          <p class="text-xs text-neutral-400 hidden sm:block">Edição Estática 100% Client-Side • Persistência Local</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="resetDemoData()" class="px-3 py-1.5 rounded-lg bg-[#1A1A1A] hover:bg-[#222222] text-neutral-300 border border-[#333333] text-xs font-semibold transition-colors">
+          Restaurar Dados Demo
+        </button>
+      </div>
+    </div>
+    <div class="border-t border-[#222222] bg-[#0A0A0A]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-2 py-2.5 overflow-x-auto">
+        <button id="tab-btn-progresso" onclick="switchTab('progresso')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-[#D4FF00] text-black">📈 Progresso, Dica do Dia & 1RM</button>
+        <button id="tab-btn-treinos" onclick="switchTab('treinos')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-neutral-400 hover:text-white hover:bg-[#1A1A1A]">🏋️ Fichas & Registrar Carga</button>
+        <button id="tab-btn-nutricao" onclick="switchTab('nutricao')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-neutral-400 hover:text-white hover:bg-[#1A1A1A]">🥗 Nutrição & Hidratação</button>
+        <button id="tab-btn-chat" onclick="switchTab('chat')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-neutral-400 hover:text-white hover:bg-[#1A1A1A]">💬 Chat Treinadores</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- TAB: PROGRESSO (Dica do Dia + 1RM Calculator + Histórico) -->
+    <section id="sec-progresso" class="space-y-8">
+      <!-- Dica do Dia (Volume + Hidratação + Sono) -->
+      <div id="daily-tip-container" class="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl"></div>
+
+      <!-- Calculadora 1RM Estimada -->
+      <div class="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl p-6 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#222222] pb-5">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-[#D4FF00]/15 text-[#D4FF00] border border-[#D4FF00]/30">Ferramenta de Precisão Biomecânica</span>
+            <h2 class="text-lg sm:text-xl font-bold text-white font-display mt-1">Calculadora de Carga Máxima Estimada (1RM)</h2>
+            <p class="text-xs text-neutral-400">Baseada automaticamente na última carga e repetições registradas por exercício</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="rm-exercise-select" onchange="onSelectRmExercise()" class="px-3.5 py-2 rounded-xl bg-[#161616] border border-[#2A2A2A] text-white text-xs font-semibold focus:outline-none focus:border-[#D4FF00]"></select>
+            <button onclick="syncLastExerciseLoad()" class="px-3 py-2 rounded-xl bg-[#1A1A1A] hover:bg-[#222222] text-[#D4FF00] border border-[#333333] text-xs font-bold">Sincronizar Última Carga</button>
+          </div>
+        </div>
+
+        <div id="rm-last-sets-bar" class="flex flex-wrap items-center gap-2"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div class="lg:col-span-5 space-y-4 bg-[#111111] p-5 rounded-xl border border-[#222222]">
+            <div>
+              <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-2">Carga Levantada (kg)</label>
+              <div class="flex items-center gap-2">
+                <button onclick="adjustRmInput('weight', -2.5)" class="w-10 h-10 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold">-2.5</button>
+                <input id="rm-weight-input" type="number" step="0.5" oninput="recalc1RM()" class="flex-1 h-10 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-center font-mono-num text-lg font-bold text-white" />
+                <button onclick="adjustRmInput('weight', 2.5)" class="w-10 h-10 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold">+2.5</button>
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-2">Repetições Concluídas</label>
+              <div class="flex items-center gap-2">
+                <button onclick="adjustRmInput('reps', -1)" class="w-10 h-10 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold">-1</button>
+                <input id="rm-reps-input" type="number" min="1" max="30" oninput="recalc1RM()" class="flex-1 h-10 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-center font-mono-num text-lg font-bold text-white" />
+                <button onclick="adjustRmInput('reps', 1)" class="w-10 h-10 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold">+1</button>
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-2">Equação Científica</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button id="f-epley" onclick="setFormula('epley')" class="py-2 rounded-lg text-xs font-bold border bg-[#D4FF00]/15 border-[#D4FF00]/40 text-[#D4FF00]">Epley</button>
+                <button id="f-brzycki" onclick="setFormula('brzycki')" class="py-2 rounded-lg text-xs font-bold border bg-[#161616] border-[#262626] text-neutral-400">Brzycki</button>
+                <button id="f-media" onclick="setFormula('media')" class="py-2 rounded-lg text-xs font-bold border bg-[#161616] border-[#262626] text-neutral-400">Média</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="rm-result-panel" class="lg:col-span-7 bg-[#111111] p-5 rounded-xl border border-[#222222] flex flex-col justify-between"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: TREINOS & REGISTRO DE SÉRIE -->
+    <section id="sec-treinos" class="hidden space-y-6">
+      <div class="p-6 rounded-2xl bg-[#141414] border border-[#242424] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white font-display">Registrar Nova Sessão / Série Rápida</h2>
+          <p class="text-xs text-neutral-400">Adicione uma série ao histórico para atualizar automaticamente a Calculadora de 1RM e a Dica do Dia</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="log-ex-select" class="px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white font-semibold"></select>
+          <input id="log-weight" type="number" placeholder="Carga (kg)" value="70" class="w-24 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white font-mono-num" />
+          <input id="log-reps" type="number" placeholder="Reps" value="8" class="w-20 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white font-mono-num" />
+          <button onclick="quickLogSet()" class="px-4 py-2 rounded-lg bg-[#D4FF00] text-black text-xs font-bold hover:brightness-95">+ Salvar Série</button>
+        </div>
+      </div>
+      <div id="exercises-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </section>
+
+    <!-- TAB: NUTRIÇÃO -->
+    <section id="sec-nutricao" class="hidden space-y-6">
+      <div class="p-6 rounded-2xl bg-[#141414] border border-[#242424] space-y-4">
+        <h2 class="text-xl font-bold text-white font-display">Calculadora Científica de Macros (Mifflin-St Jeor)</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+            <span class="text-xs text-neutral-400">Proteínas (2.0g/kg)</span>
+            <p class="text-2xl font-bold text-[#D4FF00] font-mono-num mt-1">156g / dia</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+            <span class="text-xs text-neutral-400">Carboidratos</span>
+            <p class="text-2xl font-bold text-cyan-400 font-mono-num mt-1">310g / dia</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+            <span class="text-xs text-neutral-400">Gorduras Essenciais (0.9g/kg)</span>
+            <p class="text-2xl font-bold text-amber-400 font-mono-num mt-1">70g / dia</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: CHAT -->
+    <section id="sec-chat" class="hidden space-y-6">
+      <div class="p-6 rounded-2xl bg-[#141414] border border-[#242424] space-y-4">
+        <h2 class="text-xl font-bold text-white font-display">Consultoria Rápida com Especialistas (Modo Offline GitHub Pages)</h2>
+        <div class="flex gap-2">
+          <input id="chat-input" type="text" placeholder="Pergunte sobre hipertrofia, 1RM, creatina, sono ou dores..." class="flex-1 px-4 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-sm text-white" />
+          <button onclick="sendOfflineChat()" class="px-5 py-2.5 rounded-xl bg-[#D4FF00] text-black text-xs font-bold">Enviar</button>
+        </div>
+        <div id="chat-box" class="space-y-3 pt-2"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const EXERCISES = [
+      { id: 'supino-reto-barra', name: 'Supino Reto com Barra', muscle: 'Peito', level: 'Iniciante/Avançado', defaultWeight: 65, defaultReps: 8 },
+      { id: 'agachamento-livre', name: 'Agachamento Livre com Barra', muscle: 'Pernas', level: 'Iniciante/Avançado', defaultWeight: 95, defaultReps: 8 },
+      { id: 'levantamento-terra', name: 'Levantamento Terra Convencional', muscle: 'Costas / Posterior', level: 'Avançado', defaultWeight: 110, defaultReps: 6 },
+      { id: 'desenvolvimento-halteres', name: 'Desenvolvimento com Halteres', muscle: 'Ombros', level: 'Iniciante', defaultWeight: 22, defaultReps: 10 },
+      { id: 'remada-curvada-barra', name: 'Remada Curvada Pronada', muscle: 'Costas', level: 'Avançado', defaultWeight: 60, defaultReps: 8 },
+      { id: 'leg-press-45', name: 'Leg Press 45°', muscle: 'Pernas', level: 'Iniciante', defaultWeight: 180, defaultReps: 10 }
+    ];
+
+    let state = {
+      formula: 'epley',
+      waterMl: Number(localStorage.getItem('academiapro_water_gh') || 2100),
+      sleepHours: Number(localStorage.getItem('academiapro_sleep_gh') || 7.0),
+      logs: JSON.parse(localStorage.getItem('academiapro_logs_gh') || 'null') || [
+        { exerciseId: 'supino-reto-barra', date: '26/09', sets: [{ weightKg: 60, reps: 10 }, { weightKg: 65, reps: 8 }, { weightKg: 67.5, reps: 6 }] },
+        { exerciseId: 'agachamento-livre', date: '25/09', sets: [{ weightKg: 90, reps: 8 }, { weightKg: 95, reps: 8 }] },
+        { exerciseId: 'levantamento-terra', date: '23/09', sets: [{ weightKg: 105, reps: 6 }, { weightKg: 110, reps: 5 }] }
+      ]
+    };
+
+    function saveState() {
+      localStorage.setItem('academiapro_water_gh', String(state.waterMl));
+      localStorage.setItem('academiapro_sleep_gh', String(state.sleepHours));
+      localStorage.setItem('academiapro_logs_gh', JSON.stringify(state.logs));
+    }
+
+    function switchTab(tab) {
+      ['progresso', 'treinos', 'nutricao', 'chat'].forEach(t => {
+        document.getElementById('sec-' + t).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById('tab-btn-' + t);
+        btn.className = t === tab
+          ? 'px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-[#D4FF00] text-black'
+          : 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-neutral-400 hover:text-white hover:bg-[#1A1A1A]';
+      });
+    }
+
+    function renderDailyTip() {
+      const totalVolume = state.logs.reduce((acc, l) => acc + l.sets.reduce((s, x) => s + x.weightKg * x.reps, 0), 0);
+      const waterTarget = 2730 + (totalVolume > 4000 ? 600 : 300);
+      const sleepTarget = totalVolume > 4000 ? 8.5 : 8.0;
+      const waterPct = Math.min(100, Math.round((state.waterMl / waterTarget) * 100));
+      const sleepPct = Math.min(100, Math.round((state.sleepHours / sleepTarget) * 100));
+
+      document.getElementById('daily-tip-container').innerHTML = `
+        <div class="p-6 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded bg-[#D4FF00]/15 text-[#D4FF00] border border-[#D4FF00]/30">Dica do Dia • Recuperação Integrada</span>
+              <h2 class="text-lg font-bold text-white font-display mt-1">Volume Recente: ${totalVolume.toLocaleString()} kg acumulados</h2>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="addWater(250)" class="px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold">+250ml Água</button>
+              <button onclick="addSleep(0.5)" class="px-3 py-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold">+0.5h Sono</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+              <span class="text-[10px] font-bold uppercase text-[#D4FF00]">1. Ajuste de Volume</span>
+              <p class="text-xs text-neutral-300 mt-1.5 leading-relaxed">Seu volume recente exige priorizar progressão limpa (+1 repetição ou +2kg) mantendo 1-2 repetições na reserva (RIR).</p>
+            </div>
+            <div class="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+              <div class="flex justify-between text-xs font-bold text-cyan-400"><span>2. Hidratação Diária</span><span>${state.waterMl} / ${waterTarget} ml (${waterPct}%)</span></div>
+              <div class="w-full h-2 bg-[#1F1F1F] rounded-full overflow-hidden my-2"><div class="h-full bg-cyan-400" style="width:${waterPct}%"></div></div>
+              <p class="text-[11px] text-neutral-400">Mantenha a síntese de glicogênio muscular hidratada ao longo do dia.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+              <div class="flex justify-between text-xs font-bold text-indigo-400"><span>3. Sono Anabólico</span><span>${state.sleepHours.toFixed(1)}h / ${sleepTarget}h (${sleepPct}%)</span></div>
+              <div class="w-full h-2 bg-[#1F1F1F] rounded-full overflow-hidden my-2"><div class="h-full bg-indigo-400" style="width:${sleepPct}%"></div></div>
+              <p class="text-[11px] text-neutral-400">O pico de GH e reparo miofibrilar ocorre no sono profundo.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function addWater(ml) { state.waterMl += ml; saveState(); renderDailyTip(); }
+    function addSleep(h) { state.sleepHours = Math.min(12, state.sleepHours + h); saveState(); renderDailyTip(); }
+
+    function populateSelects() {
+      const rmSel = document.getElementById('rm-exercise-select');
+      const logSel = document.getElementById('log-ex-select');
+      const opts = EXERCISES.map(e => `<option value="${e.id}">${e.name} (${e.muscle})</option>`).join('');
+      rmSel.innerHTML = opts;
+      logSel.innerHTML = opts;
+
+      document.getElementById('exercises-grid').innerHTML = EXERCISES.map(e => `
+        <div class="p-5 rounded-2xl bg-[#141414] border border-[#242424] flex flex-col justify-between gap-3">
+          <div>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#1F1F1F] text-[#D4FF00]">${e.muscle}</span>
+            <h3 class="text-base font-bold text-white mt-2">${e.name}</h3>
+            <p class="text-xs text-neutral-400 mt-1">Nível: ${e.level} • Meta sugerida: ${e.defaultWeight}kg x ${e.defaultReps} reps</p>
+          </div>
+          <button onclick="selectExerciseIn1RM('${e.id}')" class="w-full py-2 rounded-lg bg-[#1A1A1A] hover:bg-[#D4FF00] hover:text-black text-neutral-200 text-xs font-bold transition-colors">
+            Calcular 1RM deste Exercício →
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function selectExerciseIn1RM(id) {
+      document.getElementById('rm-exercise-select').value = id;
+      switchTab('progresso');
+      onSelectRmExercise();
+    }
+
+    function onSelectRmExercise() {
+      const exId = document.getElementById('rm-exercise-select').value;
+      const ex = EXERCISES.find(e => e.id === exId) || EXERCISES[0];
+      const lastEntry = [...state.logs].reverse().find(l => l.exerciseId === exId);
+      const bar = document.getElementById('rm-last-sets-bar');
+
+      if (lastEntry && lastEntry.sets.length > 0) {
+        const lastSet = lastEntry.sets[lastEntry.sets.length - 1];
+        document.getElementById('rm-weight-input').value = lastSet.weightKg;
+        document.getElementById('rm-reps-input').value = lastSet.reps;
+        bar.innerHTML = `<span class="text-xs text-neutral-400 mr-1">Séries registradas na última sessão (${lastEntry.date}):</span>` +
+          lastEntry.sets.map((s, i) => `
+            <button onclick="setRmValues(${s.weightKg}, ${s.reps})" class="px-2.5 py-1 rounded-lg bg-[#1A1A1A] hover:border-[#D4FF00] border border-[#333333] text-xs font-mono-num text-neutral-200">
+              #${i + 1}: ${s.weightKg}kg × ${s.reps}
+            </button>
+          `).join('');
+      } else {
+        document.getElementById('rm-weight-input').value = ex.defaultWeight;
+        document.getElementById('rm-reps-input').value = ex.defaultReps;
+        bar.innerHTML = `<span class="text-xs text-neutral-500">Sem histórico recente para este exercício — usando carga base sugerida.</span>`;
+      }
+      recalc1RM();
+    }
+
+    function setRmValues(w, r) {
+      document.getElementById('rm-weight-input').value = w;
+      document.getElementById('rm-reps-input').value = r;
+      recalc1RM();
+    }
+
+    function syncLastExerciseLoad() { onSelectRmExercise(); }
+
+    function adjustRmInput(field, delta) {
+      const el = document.getElementById(field === 'weight' ? 'rm-weight-input' : 'rm-reps-input');
+      const val = Math.max(1, Number(el.value || 0) + delta);
+      el.value = val;
+      recalc1RM();
+    }
+
+    function setFormula(f) {
+      state.formula = f;
+      ['epley', 'brzycki', 'media'].forEach(k => {
+        document.getElementById('f-' + k).className = k === f
+          ? 'py-2 rounded-lg text-xs font-bold border bg-[#D4FF00]/15 border-[#D4FF00]/40 text-[#D4FF00]'
+          : 'py-2 rounded-lg text-xs font-bold border bg-[#161616] border-[#262626] text-neutral-400';
+      });
+      recalc1RM();
+    }
+
+    function recalc1RM() {
+      const w = Math.max(0, Number(document.getElementById('rm-weight-input').value || 0));
+      const r = Math.max(1, Number(document.getElementById('rm-reps-input').value || 1));
+      const epley = r === 1 ? w : w * (1 + r / 30);
+      const brzycki = r === 1 ? w : w * (36 / (37 - Math.min(36, r)));
+      const lombardi = r === 1 ? w : w * Math.pow(r, 0.10);
+      const primary = state.formula === 'epley' ? epley : state.formula === 'brzycki' ? brzycki : (epley + brzycki) / 2;
+      const rm = Math.round(primary * 10) / 10;
+
+      const zones = [
+        { pct: 95, label: 'Força Máxima / Neural', reps: '1–2 reps', load: Math.round(rm * 0.95) },
+        { pct: 85, label: 'Força Pura', reps: '4–6 reps', load: Math.round(rm * 0.85) },
+        { pct: 75, label: 'Hipertrofia Miofibrilar', reps: '8–12 reps', load: Math.round(rm * 0.75) },
+        { pct: 65, label: 'Hipertrofia Metabólica', reps: '12–15 reps', load: Math.round(rm * 0.65) }
+      ];
+
+      document.getElementById('rm-result-panel').innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222222] pb-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Carga Máxima Estimada (1RM)</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span class="text-4xl font-bold text-[#D4FF00] font-mono-num">${rm}</span>
+              <span class="text-lg font-bold text-neutral-400">kg</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
+              <span class="text-[10px] text-neutral-400 block">Epley</span>
+              <span class="text-xs font-bold font-mono-num text-white">${epley.toFixed(1)}kg</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
+              <span class="text-[10px] text-neutral-400 block">Brzycki</span>
+              <span class="text-xs font-bold font-mono-num text-white">${brzycki.toFixed(1)}kg</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
+              <span class="text-[10px] text-neutral-400 block">Lombardi</span>
+              <span class="text-xs font-bold font-mono-num text-white">${lombardi.toFixed(1)}kg</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4">
+          ${zones.map(z => `
+            <div class="p-3 rounded-xl bg-[#161616] border border-[#262626]">
+              <div class="flex items-center justify-between text-[11px] font-bold text-[#D4FF00]">
+                <span>${z.pct}% 1RM</span>
+                <span class="text-neutral-400 font-normal">${z.reps}</span>
+              </div>
+              <p class="text-lg font-bold text-white font-mono-num mt-1">${z.load} kg</p>
+              <p class="text-[10px] text-neutral-400 mt-0.5">${z.label}</p>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function quickLogSet() {
+      const exId = document.getElementById('log-ex-select').value;
+      const w = Number(document.getElementById('log-weight').value || 60);
+      const r = Number(document.getElementById('log-reps').value || 8);
+      state.logs.push({ exerciseId: exId, date: 'Hoje', sets: [{ weightKg: w, reps: r }] });
+      saveState();
+      renderDailyTip();
+      document.getElementById('rm-exercise-select').value = exId;
+      onSelectRmExercise();
+      switchTab('progresso');
+    }
+
+    function sendOfflineChat() {
+      const input = document.getElementById('chat-input');
+      const q = input.value.trim();
+      if (!q) return;
+      input.value = '';
+      const box = document.getElementById('chat-box');
+      box.innerHTML = `
+        <div class="p-3.5 rounded-xl bg-[#111111] border border-[#222222] text-xs text-neutral-200">
+          <strong class="text-[#D4FF00]">Você:</strong> ${q}
+        </div>
+        <div class="p-3.5 rounded-xl bg-[#D4FF00]/10 border border-[#D4FF00]/30 text-xs text-neutral-200">
+          <strong class="text-[#D4FF00]">Prof. Rafael Silva (Fisiologia):</strong> Para evoluir com consistência e segurança articular, trabalhe na faixa de 75% a 85% do seu 1RM estimado, mantenha a hidratação acima de 35ml/kg e garanta 7.5h a 8.5h de sono profundo!
+        </div>
+      ` + box.innerHTML;
+    }
+
+    function resetDemoData() {
+      localStorage.removeItem('academiapro_water_gh');
+      localStorage.removeItem('academiapro_sleep_gh');
+      localStorage.removeItem('academiapro_logs_gh');
+      location.reload();
+    }
+
+    populateSelects();
+    renderDailyTip();
+    onSelectRmExercise();
+  </script>
+</body>
+</html>

@@ -1,14 +1,15 @@
 import React from 'react';
-import { Dumbbell, Flame, Sparkles, Trophy, Calendar, BookOpen, Utensils, MessageSquare, Award } from 'lucide-react';
+import { Dumbbell, Flame, Sparkles, Trophy, Calendar, BookOpen, Utensils, MessageSquare, Award, Github } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 
 interface NavbarProps {
   activeTab: 'treinos' | 'progresso' | 'nutricao' | 'chat' | 'vip';
   setActiveTab: (tab: 'treinos' | 'progresso' | 'nutricao' | 'chat' | 'vip') => void;
   onOpenPremiumModal: () => void;
+  onOpenGitHubPagesModal: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenPremiumModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenPremiumModal, onOpenGitHubPagesModal }) => {
   const { userProfile, activeWorkout, monthlyCompletedCount } = useWorkout();
 
   return (
@@ -74,6 +75,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenP
               <span className="font-bold text-white">{monthlyCompletedCount}</span>
               <span className="text-neutral-400">no mês</span>
             </div>
+
+            {/* GitHub Pages Version Button */}
+            <button
+              id="btn-github-pages"
+              onClick={onOpenGitHubPagesModal}
+              title="Versão para GitHub Pages / Exportar HTML Estático"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#161616] hover:bg-[#222222] border border-[#2C2C2C] text-xs font-semibold text-neutral-200 transition-colors"
+            >
+              <Github className="w-3.5 h-3.5 text-[#D4FF00]" />
+              <span className="hidden md:inline">GitHub Pages</span>
+            </button>
 
             {/* VIP Subscription Button */}
             <button
