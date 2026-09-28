@@ -9,6 +9,7 @@ import { CardioLog } from './CardioLog';
 import { SleepMonitor } from './SleepMonitor';
 import { HydrationMonitor } from './HydrationMonitor';
 import { ProgressDailyTipCard } from './ProgressDailyTipCard';
+import { OneRepMaxCalculator } from './OneRepMaxCalculator';
 
 interface ProgressDashboardProps {
   onOpenPremiumModal: () => void;
@@ -54,16 +55,23 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
     (workoutHistory || []).forEach(s => {
       if (!s || !s.exercises) return;
       const match = s.exercises.find(e => e.exerciseId === exerciseId);
-      if (match && match.best1RM && match.sets) {
+      if (match && match.sets && match.sets.length > 0) {
         let maxWeight = 0;
+        let calculatedMax1RM = match.best1RM || 0;
         match.sets.forEach(set => {
           if (set && set.weightKg > maxWeight) maxWeight = set.weightKg;
+          if (set && set.weightKg > 0 && set.reps > 0) {
+            const est = set.reps === 1 ? set.weightKg : Math.round(set.weightKg * (1 + set.reps / 30));
+            if (est > calculatedMax1RM) calculatedMax1RM = est;
+          }
         });
-        list.push({
-          date: s.date,
-          max1RM: match.best1RM,
-          topWeight: maxWeight
-        });
+        if (calculatedMax1RM > 0) {
+          list.push({
+            date: s.date,
+            max1RM: calculatedMax1RM,
+            topWeight: maxWeight
+          });
+        }
       }
     });
     return list.reverse();
@@ -673,6 +681,9 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Interactive 1RM Calculator Tool Based on Last Recorded Exercise Load & Reps */}
+      <OneRepMaxCalculator />
 
       {/* Body Measurements Tracker Table */}
       <div className="p-6 rounded-2xl bg-[#161616] border border-[#222222] space-y-4">
