@@ -49,7 +49,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
       - name: Instalar Dependências
         run: npm install
       - name: Compilar para GitHub Pages
