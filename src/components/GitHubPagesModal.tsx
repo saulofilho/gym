@@ -137,6 +137,60 @@ export const GitHubPagesModal: React.FC<GitHubPagesModalProps> = ({ isOpen, onCl
     <p class="text-sm text-neutral-300">Com ${recentVolume.toLocaleString()} kg de volume recente, mantenha sua meta hídrica diária acima de ${Math.round(userProfile.weightKg * 35 + 500)} ml (atual: ${waterIntakeMl} ml) e priorize 8.0h de sono profundo para supercompensação muscular.</p>
   </section>
   <section class="p-6 rounded-2xl bg-[#141414] border border-[#242424] space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h2 class="text-lg font-bold text-white font-display">Registro de Séries & Cronômetro de Descanso Recomendado</h2>
+        <p class="text-xs text-neutral-400">O tempo de descanso é ajustado automaticamente conforme a demanda biomecânica do exercício</p>
+      </div>
+      <span id="rec-badge" class="text-xs font-mono-num text-[#D4FF00]">Recomendado: 90s</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+      <select id="ex-sel" onchange="onExChange()" class="p-3 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-white text-xs font-semibold">
+        <option value="90" data-name="Supino Reto com Barra">Supino Reto com Barra (90s)</option>
+        <option value="120" data-name="Agachamento Livre">Agachamento Livre (120s)</option>
+        <option value="150" data-name="Levantamento Terra">Levantamento Terra (150s)</option>
+        <option value="75" data-name="Desenvolvimento Halteres">Desenvolvimento Halteres (75s)</option>
+        <option value="90" data-name="Remada Curvada">Remada Curvada (90s)</option>
+      </select>
+      <input id="set-w" type="number" value="70" class="p-3 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-[#D4FF00] font-bold font-mono-num text-sm" placeholder="Carga (kg)" />
+      <input id="set-r" type="number" value="8" class="p-3 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-white font-bold font-mono-num text-sm" placeholder="Reps" />
+      <select id="set-rpe" class="p-3 rounded-xl bg-[#0A0A0A] border border-[#D4FF00]/40 text-[#D4FF00] font-bold font-mono-num text-xs">
+        <option value="1">RPE 1 (Muito Leve)</option>
+        <option value="2">RPE 2 (Leve)</option>
+        <option value="3">RPE 3 (Aquecimento)</option>
+        <option value="4">RPE 4 (Moderado Leve)</option>
+        <option value="5">RPE 5 (5 RIR)</option>
+        <option value="6">RPE 6 (4 RIR)</option>
+        <option value="7">RPE 7 (3 RIR)</option>
+        <option value="8" selected>RPE 8 (Ideal • 2 RIR)</option>
+        <option value="9">RPE 9 (Intenso • 1 RIR)</option>
+        <option value="10">RPE 10 (Falha • 0 RIR)</option>
+      </select>
+      <button onclick="saveSetAndRest()" class="p-3 rounded-xl bg-[#D4FF00] text-black font-bold text-xs hover:brightness-95">✓ Salvar Série + Descansar</button>
+    </div>
+    <div class="p-4 rounded-xl bg-[#0D0D0D] border border-[#222222] flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div>
+          <span id="t-status" class="text-[10px] uppercase tracking-wider text-neutral-400 block">Cronômetro de Descanso</span>
+          <span id="t-disp" class="text-3xl font-bold font-mono-num text-white">01:30</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="setRest(60)" class="px-2.5 py-1 rounded bg-[#1A1A1A] text-xs font-mono-num text-neutral-300 border border-[#2C2C2C]">60s</button>
+          <button onclick="setRest(90)" class="px-2.5 py-1 rounded bg-[#1A1A1A] text-xs font-mono-num text-[#D4FF00] border border-[#2C2C2C]">90s</button>
+          <button onclick="setRest(120)" class="px-2.5 py-1 rounded bg-[#1A1A1A] text-xs font-mono-num text-neutral-300 border border-[#2C2C2C]">120s</button>
+          <input id="custom-s" type="number" value="90" onchange="setRest(Number(this.value||60))" class="w-16 px-2 py-1 rounded bg-[#0A0A0A] border border-[#2C2C2C] text-xs font-mono-num text-center text-white" />
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="adjRest(-15)" class="px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] border border-[#2C2C2C] text-xs font-mono-num text-neutral-300">-15s</button>
+        <button onclick="adjRest(30)" class="px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] border border-[#2C2C2C] text-xs font-mono-num text-[#D4FF00]">+30s</button>
+        <button id="t-btn" onclick="toggleTimer()" class="px-4 py-1.5 rounded-lg bg-[#D4FF00] text-black font-bold text-xs">▶ Iniciar</button>
+        <button onclick="resetTimer()" class="px-3 py-1.5 rounded-lg bg-[#1A1A1A] border border-[#2C2C2C] text-xs text-neutral-300">Zerar</button>
+      </div>
+    </div>
+    <div id="sets-log" class="flex flex-wrap gap-2 text-xs font-mono-num"></div>
+  </section>
+  <section class="p-6 rounded-2xl bg-[#141414] border border-[#242424] space-y-4">
     <h2 class="text-lg font-bold text-white font-display">Calculadora Rápida de 1RM (Epley & Brzycki)</h2>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <input id="w" type="number" value="70" oninput="calc()" class="p-3 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-white font-mono-num" placeholder="Carga (kg)" />
@@ -148,6 +202,54 @@ export const GitHubPagesModal: React.FC<GitHubPagesModalProps> = ({ isOpen, onCl
     </div>
   </section>
   <script>
+    var targetSec = 90, remSec = 90, tInt = null;
+    function fmt(s){ var m=Math.floor(s/60), r=s%60; return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0'); }
+    function updT(){
+      document.getElementById('t-disp').textContent = fmt(remSec);
+      document.getElementById('t-btn').textContent = tInt ? '⏸ Pausar' : '▶ Iniciar';
+    }
+    function onExChange(){
+      var sel = document.getElementById('ex-sel');
+      var rec = Number(sel.value||90);
+      document.getElementById('rec-badge').textContent = 'Recomendado: ' + rec + 's';
+      setRest(rec);
+    }
+    function setRest(s){
+      targetSec = Math.max(5, s); remSec = targetSec;
+      document.getElementById('custom-s').value = targetSec;
+      updT();
+    }
+    function adjRest(d){ remSec = Math.max(5, remSec + d); updT(); }
+    function toggleTimer(){
+      if(tInt){ clearInterval(tInt); tInt=null; updT(); return; }
+      if(remSec<=0) remSec=targetSec;
+      document.getElementById('t-status').textContent = '⏱️ Descansando...';
+      tInt = setInterval(function(){
+        remSec = Math.max(0, remSec - 1);
+        updT();
+        if(remSec<=0){
+          clearInterval(tInt); tInt=null;
+          document.getElementById('t-status').textContent = '🔔 Descanso Concluído!';
+          updT();
+        }
+      }, 1000);
+      updT();
+    }
+    function resetTimer(){ if(tInt){clearInterval(tInt);tInt=null;} remSec=targetSec; document.getElementById('t-status').textContent='Cronômetro de Descanso'; updT(); }
+    function saveSetAndRest(){
+      var sel = document.getElementById('ex-sel');
+      var name = sel.options[sel.selectedIndex].getAttribute('data-name');
+      var w = document.getElementById('set-w').value;
+      var r = document.getElementById('set-r').value;
+      var rpe = document.getElementById('set-rpe').value;
+      var log = document.getElementById('sets-log');
+      log.innerHTML += '<span class="px-2.5 py-1 rounded bg-[#111111] border border-[#2C2C2C] text-neutral-200">' + name + ': <strong class="text-[#D4FF00]">' + w + 'kg × ' + r + '</strong> <span class="text-amber-300">• RPE ' + rpe + '</span></span>';
+      document.getElementById('w').value = w;
+      document.getElementById('r').value = r;
+      calc();
+      resetTimer();
+      toggleTimer();
+    }
     function calc(){
       var w = Number(document.getElementById('w').value||0);
       var r = Math.max(1, Number(document.getElementById('r').value||1));

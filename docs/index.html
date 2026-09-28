@@ -87,6 +87,17 @@
               </div>
             </div>
             <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-[#D4FF00] block">RPE da Série de Referência (1 a 10)</label>
+                <span id="rm-rir-badge" class="text-[11px] font-mono-num text-neutral-400">2 RIR</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="adjustRmInput('rpe', -0.5)" class="w-10 h-10 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold text-xs">-0.5</button>
+                <input id="rm-rpe-input" type="number" min="1" max="10" step="0.5" value="8" oninput="recalc1RM()" class="flex-1 h-10 rounded-lg bg-[#0A0A0A] border border-[#D4FF00]/40 text-center font-mono-num text-lg font-bold text-[#D4FF00]" />
+                <button onclick="adjustRmInput('rpe', 0.5)" class="w-10 h-10 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold text-xs">+0.5</button>
+              </div>
+            </div>
+            <div>
               <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-2">Equação Científica</label>
               <div class="grid grid-cols-3 gap-2">
                 <button id="f-epley" onclick="setFormula('epley')" class="py-2 rounded-lg text-xs font-bold border bg-[#D4FF00]/15 border-[#D4FF00]/40 text-[#D4FF00]">Epley</button>
@@ -103,18 +114,174 @@
 
     <!-- TAB: TREINOS & REGISTRO DE SÉRIE -->
     <section id="sec-treinos" class="hidden space-y-6">
-      <div class="p-6 rounded-2xl bg-[#141414] border border-[#242424] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-xl font-bold text-white font-display">Registrar Nova Sessão / Série Rápida</h2>
-          <p class="text-xs text-neutral-400">Adicione uma série ao histórico para atualizar automaticamente a Calculadora de 1RM e a Dica do Dia</p>
+      <!-- Painel Principal: Registro de Série + Cronômetro de Descanso Recomendado -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Coluna 1: Registrar Série -->
+        <div class="lg:col-span-7 p-6 rounded-2xl bg-[#141414] border border-[#242424] flex flex-col justify-between gap-5">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 text-xs text-neutral-400">
+              <span class="text-[#D4FF00] font-semibold">Registro Série a Série</span>
+              <span aria-hidden="true">·</span>
+              <span id="log-ex-rest-hint">Descanso recomendado: 90s</span>
+            </div>
+            <h2 class="text-xl font-bold text-white font-display">Registrar Nova Série no Histórico</h2>
+            <p class="text-xs text-neutral-400">Selecione o exercício, informe carga e repetições e inicie o descanso recomendado automaticamente.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div class="sm:col-span-5">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">Exercício</label>
+              <select id="log-ex-select" onchange="onChangeLogExercise()" class="w-full h-11 px-3 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white font-semibold focus:outline-none focus:border-[#D4FF00]"></select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">Carga (kg)</label>
+              <input id="log-weight" type="number" step="0.5" placeholder="Carga" value="65" class="w-full h-11 px-2 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-sm text-[#D4FF00] font-bold font-mono-num text-center focus:outline-none focus:border-[#D4FF00]" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">Reps</label>
+              <input id="log-reps" type="number" min="1" max="50" placeholder="Reps" value="8" class="w-full h-11 px-2 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-sm text-white font-bold font-mono-num text-center focus:outline-none focus:border-[#D4FF00]" />
+            </div>
+            <div class="sm:col-span-3">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-[#D4FF00] block mb-1.5">RPE (1 a 10)</label>
+              <select id="log-rpe" onchange="onChangeRpeSelect()" class="w-full h-11 px-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4FF00]/40 text-xs text-[#D4FF00] font-bold font-mono-num focus:outline-none focus:border-[#D4FF00]">
+                <option value="1">RPE 1 • Muito Leve</option>
+                <option value="2">RPE 2 • Leve</option>
+                <option value="3">RPE 3 • Aquecimento</option>
+                <option value="4">RPE 4 • Moderado Leve</option>
+                <option value="5">RPE 5 • Moderado (5 RIR)</option>
+                <option value="6">RPE 6 • Controle (4 RIR)</option>
+                <option value="7">RPE 7 • Vigoroso (3 RIR)</option>
+                <option value="8" selected>RPE 8 • Ideal (2 RIR)</option>
+                <option value="9">RPE 9 • Intenso (1 RIR)</option>
+                <option value="10">RPE 10 • Falha Máx (0 RIR)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Esforço Percebido (RPE):</span>
+              <span id="rpe-live-description" class="font-semibold text-[#D4FF00]">RPE 8 — Zona Ideal de Hipertrofia (2 repetições na reserva)</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button type="button" onclick="quickPickRpe(7)" class="px-2 py-0.5 rounded bg-[#1A1A1A] hover:border-[#D4FF00] border border-[#2C2C2C] text-[11px] font-mono-num text-neutral-300">7</button>
+              <button type="button" onclick="quickPickRpe(8)" class="px-2 py-0.5 rounded bg-[#D4FF00]/15 border border-[#D4FF00]/50 text-[11px] font-mono-num text-[#D4FF00] font-bold">8</button>
+              <button type="button" onclick="quickPickRpe(9)" class="px-2 py-0.5 rounded bg-[#1A1A1A] hover:border-amber-400 border border-[#2C2C2C] text-[11px] font-mono-num text-amber-300">9</button>
+              <button type="button" onclick="quickPickRpe(10)" class="px-2 py-0.5 rounded bg-[#1A1A1A] hover:border-rose-400 border border-[#2C2C2C] text-[11px] font-mono-num text-rose-400">10</button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#222222]">
+            <label class="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer select-none">
+              <input id="auto-start-rest-checkbox" type="checkbox" checked class="w-4 h-4 accent-[#D4FF00] rounded cursor-pointer" />
+              <span>Iniciar cronômetro de descanso ao salvar série</span>
+            </label>
+
+            <div class="flex items-center gap-2">
+              <button onclick="quickLogSet(false)" class="px-4 py-2.5 rounded-xl bg-[#1A1A1A] hover:bg-[#242424] text-neutral-200 border border-[#333333] text-xs font-bold transition-colors">
+                Salvar Série
+              </button>
+              <button onclick="quickLogSet(true)" class="px-4 py-2.5 rounded-xl bg-[#D4FF00] hover:brightness-95 text-black text-xs font-bold transition-all shadow-md">
+                ✓ Concluir Série + Iniciar Descanso
+              </button>
+            </div>
+          </div>
+
+          <!-- Últimas séries registradas na sessão + Gráfico de Barras CSS/DOM (Últimas 5 Séries) -->
+          <div class="pt-2 border-t border-[#222222] space-y-3">
+            <div class="flex items-center justify-between text-xs text-neutral-400">
+              <span class="font-semibold text-neutral-300">Evolução nas Últimas 5 Séries (Carga kg × RPE)</span>
+              <span id="log-recent-tonnage" class="font-mono-num text-[#D4FF00]"></span>
+            </div>
+            <div id="log-recent-barchart"></div>
+            <div id="log-recent-sets-list" class="flex flex-wrap gap-2"></div>
+          </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <select id="log-ex-select" class="px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white font-semibold"></select>
-          <input id="log-weight" type="number" placeholder="Carga (kg)" value="70" class="w-24 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white font-mono-num" />
-          <input id="log-reps" type="number" placeholder="Reps" value="8" class="w-20 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white font-mono-num" />
-          <button onclick="quickLogSet()" class="px-4 py-2 rounded-lg bg-[#D4FF00] text-black text-xs font-bold hover:brightness-95">+ Salvar Série</button>
+
+        <!-- Coluna 2: Cronômetro de Descanso Personalizado (Rest Timer) -->
+        <div class="lg:col-span-5 p-6 rounded-2xl bg-[#141414] border border-[#242424] flex flex-col justify-between gap-4 relative overflow-hidden">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 text-xs text-neutral-400">
+                <span class="text-[#D4FF00] font-semibold">Cronômetro de Recuperação</span>
+                <span aria-hidden="true">·</span>
+                <span id="timer-rec-label">Recomendado: 90s</span>
+              </div>
+              <h3 id="timer-ex-title" class="text-base font-bold text-white font-display mt-0.5">Supino Reto com Barra</h3>
+              <p id="timer-ex-rationale" class="text-[11px] text-neutral-400 mt-0.5">90s para ressíntese ideal de ATP-CP em exercício composto.</p>
+            </div>
+            <button id="btn-sound-toggle" onclick="toggleTimerSound()" class="px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] border border-[#2C2C2C] text-xs font-semibold text-[#D4FF00]" title="Alternar alerta sonoro">
+              🔔 Som Ativo
+            </button>
+          </div>
+
+          <!-- Visor Digital de Contagem Regressiva -->
+          <div class="p-4 rounded-xl bg-[#0D0D0D] border border-[#222222] space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <span id="timer-status-text" class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block">Pronto para Iniciar</span>
+                <div id="timer-display" class="text-4xl sm:text-5xl font-bold font-mono-num text-white tracking-tight mt-0.5">01:30</div>
+              </div>
+              <div class="flex flex-col items-end gap-1.5">
+                <div class="flex items-center gap-1.5">
+                  <button onclick="adjustActiveTimer(-15)" class="px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] border border-[#2C2C2C] text-xs font-mono-num font-bold text-neutral-300">-15s</button>
+                  <button onclick="adjustActiveTimer(15)" class="px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] border border-[#2C2C2C] text-xs font-mono-num font-bold text-[#D4FF00]">+15s</button>
+                  <button onclick="adjustActiveTimer(30)" class="px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] border border-[#2C2C2C] text-xs font-mono-num font-bold text-[#D4FF00]">+30s</button>
+                </div>
+                <span id="timer-custom-Summary" class="text-[11px] font-mono-num text-neutral-500">Alvo: 90s</span>
+              </div>
+            </div>
+
+            <!-- Barra de Progresso do Descanso -->
+            <div class="w-full h-2 bg-[#1C1C1C] rounded-full overflow-hidden">
+              <div id="timer-progress-bar" class="h-full bg-[#D4FF00] transition-all duration-300" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- Seletor de Tempo Recomendado ou Personalizado -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-[11px] text-neutral-400">
+              <span class="font-bold uppercase tracking-wider">Tempo de Descanso (Segundos)</span>
+              <button onclick="applyRecommendedRest()" class="text-[#D4FF00] hover:underline font-semibold">Usar Recomendado do Exercício</button>
+            </div>
+            <div class="grid grid-cols-5 gap-1.5">
+              <button onclick="setCustomRestDuration(45)" id="preset-rest-45" class="py-1.5 rounded-lg bg-[#161616] border border-[#262626] text-xs font-mono-num font-bold text-neutral-300 hover:border-[#D4FF00]">45s</button>
+              <button onclick="setCustomRestDuration(60)" id="preset-rest-60" class="py-1.5 rounded-lg bg-[#161616] border border-[#262626] text-xs font-mono-num font-bold text-neutral-300 hover:border-[#D4FF00]">60s</button>
+              <button onclick="setCustomRestDuration(90)" id="preset-rest-90" class="py-1.5 rounded-lg bg-[#D4FF00]/15 border border-[#D4FF00]/50 text-xs font-mono-num font-bold text-[#D4FF00]">90s</button>
+              <button onclick="setCustomRestDuration(120)" id="preset-rest-120" class="py-1.5 rounded-lg bg-[#161616] border border-[#262626] text-xs font-mono-num font-bold text-neutral-300 hover:border-[#D4FF00]">120s</button>
+              <button onclick="setCustomRestDuration(180)" id="preset-rest-180" class="py-1.5 rounded-lg bg-[#161616] border border-[#262626] text-xs font-mono-num font-bold text-neutral-300 hover:border-[#D4FF00]">180s</button>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <span class="text-xs text-neutral-400">Personalizado (s):</span>
+              <input id="custom-rest-input" type="number" min="10" max="600" step="5" value="90" onchange="setCustomRestDuration(Number(this.value || 60))" class="w-24 h-9 px-2.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs font-mono-num font-bold text-white text-center focus:outline-none focus:border-[#D4FF00]" />
+              <div class="flex-1 flex items-center justify-end gap-2">
+                <button id="btn-timer-start-pause" onclick="toggleRestTimer()" class="px-4 py-2 rounded-lg bg-[#D4FF00] hover:brightness-95 text-black text-xs font-bold transition-all">
+                  ▶ Iniciar Descanso
+                </button>
+                <button onclick="resetRestTimer()" class="px-3 py-2 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] text-neutral-300 border border-[#333333] text-xs font-semibold">
+                  Zerar
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Alerta Visual de Descanso Finalizado -->
+      <div id="rest-finished-banner" class="hidden p-4 rounded-2xl bg-[#161616] border-2 border-[#D4FF00] flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#D4FF00] text-black flex items-center justify-center font-bold text-lg">🔔</div>
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-[#D4FF00]">Recuperação Concluída!</p>
+            <p id="rest-finished-msg" class="text-sm font-bold text-white">Pronto para a próxima série com força total.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="startRestCountdown(30)" class="px-3 py-2 rounded-lg bg-[#222222] hover:bg-[#2C2C2C] text-xs font-bold text-[#D4FF00] border border-[#333333]">+30s Extra</button>
+          <button onclick="dismissRestBanner()" class="px-4 py-2 rounded-lg bg-[#D4FF00] text-black text-xs font-bold">Iniciar Próxima Série</button>
+        </div>
+      </div>
+
       <div id="exercises-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
     </section>
 
@@ -152,26 +319,336 @@
     </section>
   </main>
 
+  <!-- Barra Flutuante de Cronômetro Ativo (Visível em qualquer aba) -->
+  <div id="floating-rest-hud" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-lg bg-[#141414]/95 backdrop-blur-md border border-[#D4FF00]/50 rounded-2xl p-3.5 shadow-2xl">
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-[#D4FF00] text-black flex items-center justify-center font-bold text-sm">⏱️</div>
+        <div>
+          <span id="hud-ex-name" class="text-[10px] font-bold uppercase tracking-wider text-[#D4FF00] block">Descanso em Andamento</span>
+          <span id="hud-timer-val" class="text-xl font-bold font-mono-num text-white">01:30</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="adjustActiveTimer(-15)" class="px-2 py-1 rounded-lg bg-[#222222] text-xs font-mono-num font-bold text-neutral-300">-15s</button>
+        <button onclick="adjustActiveTimer(30)" class="px-2 py-1 rounded-lg bg-[#222222] text-xs font-mono-num font-bold text-[#D4FF00]">+30s</button>
+        <button onclick="resetRestTimer()" class="px-3 py-1 rounded-lg bg-[#D4FF00] text-black text-xs font-bold">Pular</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const EXERCISES = [
-      { id: 'supino-reto-barra', name: 'Supino Reto com Barra', muscle: 'Peito', level: 'Iniciante/Avançado', defaultWeight: 65, defaultReps: 8 },
-      { id: 'agachamento-livre', name: 'Agachamento Livre com Barra', muscle: 'Pernas', level: 'Iniciante/Avançado', defaultWeight: 95, defaultReps: 8 },
-      { id: 'levantamento-terra', name: 'Levantamento Terra Convencional', muscle: 'Costas / Posterior', level: 'Avançado', defaultWeight: 110, defaultReps: 6 },
-      { id: 'desenvolvimento-halteres', name: 'Desenvolvimento com Halteres', muscle: 'Ombros', level: 'Iniciante', defaultWeight: 22, defaultReps: 10 },
-      { id: 'remada-curvada-barra', name: 'Remada Curvada Pronada', muscle: 'Costas', level: 'Avançado', defaultWeight: 60, defaultReps: 8 },
-      { id: 'leg-press-45', name: 'Leg Press 45°', muscle: 'Pernas', level: 'Iniciante', defaultWeight: 180, defaultReps: 10 }
+      { id: 'supino-reto-barra', name: 'Supino Reto com Barra', muscle: 'Peito', level: 'Iniciante/Avançado', defaultWeight: 65, defaultReps: 8, defaultRestSeconds: 90, restNote: '90s para ressíntese ideal de ATP-CP em empurrar horizontal.' },
+      { id: 'agachamento-livre', name: 'Agachamento Livre com Barra', muscle: 'Pernas', level: 'Iniciante/Avançado', defaultWeight: 95, defaultReps: 8, defaultRestSeconds: 120, restNote: '120s recomendados pela alta demanda neural e cardiorrespiratória.' },
+      { id: 'levantamento-terra', name: 'Levantamento Terra Convencional', muscle: 'Costas / Posterior', level: 'Avançado', defaultWeight: 110, defaultReps: 6, defaultRestSeconds: 150, restNote: '150s para recuperação do sistema nervoso central e cadeia posterior.' },
+      { id: 'desenvolvimento-halteres', name: 'Desenvolvimento com Halteres', muscle: 'Ombros', level: 'Iniciante', defaultWeight: 22, defaultReps: 10, defaultRestSeconds: 75, restNote: '75s para estabilidade escapular e recuperação do deltoide.' },
+      { id: 'remada-curvada-barra', name: 'Remada Curvada Pronada', muscle: 'Costas', level: 'Avançado', defaultWeight: 60, defaultReps: 8, defaultRestSeconds: 90, restNote: '90s para recuperação dos retratores escapulares e lombar.' },
+      { id: 'leg-press-45', name: 'Leg Press 45°', muscle: 'Pernas', level: 'Iniciante', defaultWeight: 180, defaultReps: 10, defaultRestSeconds: 90, restNote: '90s para depuração de lactato e manutenção de volume no quadríceps.' }
     ];
 
     let state = {
       formula: 'epley',
       waterMl: Number(localStorage.getItem('academiapro_water_gh') || 2100),
       sleepHours: Number(localStorage.getItem('academiapro_sleep_gh') || 7.0),
+      soundEnabled: localStorage.getItem('academiapro_sound_gh') !== 'false',
+      restTargetSeconds: 90,
+      restRemainingSeconds: 90,
+      restRunning: false,
+      restIntervalId: null,
       logs: JSON.parse(localStorage.getItem('academiapro_logs_gh') || 'null') || [
-        { exerciseId: 'supino-reto-barra', date: '26/09', sets: [{ weightKg: 60, reps: 10 }, { weightKg: 65, reps: 8 }, { weightKg: 67.5, reps: 6 }] },
-        { exerciseId: 'agachamento-livre', date: '25/09', sets: [{ weightKg: 90, reps: 8 }, { weightKg: 95, reps: 8 }] },
-        { exerciseId: 'levantamento-terra', date: '23/09', sets: [{ weightKg: 105, reps: 6 }, { weightKg: 110, reps: 5 }] }
+        { exerciseId: 'supino-reto-barra', date: '22/09', sets: [{ weightKg: 57.5, reps: 10, rpe: 7 }, { weightKg: 60, reps: 10, rpe: 7.5 }] },
+        { exerciseId: 'supino-reto-barra', date: '26/09', sets: [{ weightKg: 60, reps: 10, rpe: 7.5 }, { weightKg: 65, reps: 8, rpe: 8 }, { weightKg: 67.5, reps: 6, rpe: 9 }] },
+        { exerciseId: 'agachamento-livre', date: '21/09', sets: [{ weightKg: 85, reps: 10, rpe: 7.5 }, { weightKg: 87.5, reps: 8, rpe: 8 }, { weightKg: 90, reps: 8, rpe: 8.5 }] },
+        { exerciseId: 'agachamento-livre', date: '25/09', sets: [{ weightKg: 92.5, reps: 8, rpe: 8 }, { weightKg: 95, reps: 8, rpe: 9 }] },
+        { exerciseId: 'levantamento-terra', date: '23/09', sets: [{ weightKg: 100, reps: 6, rpe: 7.5 }, { weightKg: 105, reps: 6, rpe: 8 }, { weightKg: 110, reps: 5, rpe: 9 }] }
       ]
     };
+
+    function formatMMSS(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
+    }
+
+    function playRestBeep() {
+      if (!state.soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.14);
+          gain.gain.setValueAtTime(0.001, ctx.currentTime + idx * 0.14);
+          gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + idx * 0.14 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.14 + 0.22);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.14);
+          osc.stop(ctx.currentTime + idx * 0.14 + 0.24);
+        });
+      } catch (e) {}
+    }
+
+    function toggleTimerSound() {
+      state.soundEnabled = !state.soundEnabled;
+      localStorage.setItem('academiapro_sound_gh', String(state.soundEnabled));
+      const btn = document.getElementById('btn-sound-toggle');
+      btn.textContent = state.soundEnabled ? '🔔 Som Ativo' : '🔕 Silenciado';
+      btn.className = state.soundEnabled
+        ? 'px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] border border-[#2C2C2C] text-xs font-semibold text-[#D4FF00]'
+        : 'px-2.5 py-1.5 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] border border-[#2C2C2C] text-xs font-semibold text-neutral-500';
+      if (state.soundEnabled) playRestBeep();
+    }
+
+    function updateTimerUI() {
+      const disp = document.getElementById('timer-display');
+      const status = document.getElementById('timer-status-text');
+      const bar = document.getElementById('timer-progress-bar');
+      const btn = document.getElementById('btn-timer-start-pause');
+      const summary = document.getElementById('timer-custom-Summary');
+      const hud = document.getElementById('floating-rest-hud');
+      const hudVal = document.getElementById('hud-timer-val');
+
+      const formatted = formatMMSS(state.restRemainingSeconds);
+      disp.textContent = formatted;
+      if (hudVal) hudVal.textContent = formatted;
+      summary.textContent = 'Alvo: ' + state.restTargetSeconds + 's';
+
+      const pct = state.restTargetSeconds > 0
+        ? Math.max(0, Math.min(100, (state.restRemainingSeconds / state.restTargetSeconds) * 100))
+        : 0;
+      bar.style.width = pct + '%';
+
+      if (state.restRunning) {
+        status.textContent = '⏱️ Contagem Regressiva em Andamento...';
+        status.className = 'text-[11px] font-bold uppercase tracking-wider text-[#D4FF00] block';
+        btn.textContent = '⏸ Pausar';
+        hud.classList.remove('hidden');
+      } else {
+        status.textContent = state.restRemainingSeconds === 0 ? '✓ Descanso Concluído!' : 'Pronto para Iniciar';
+        status.className = 'text-[11px] font-bold uppercase tracking-wider text-neutral-400 block';
+        btn.textContent = state.restRemainingSeconds < state.restTargetSeconds && state.restRemainingSeconds > 0 ? '▶ Retomar' : '▶ Iniciar Descanso';
+        hud.classList.add('hidden');
+      }
+
+      [45, 60, 90, 120, 180].forEach(sec => {
+        const pBtn = document.getElementById('preset-rest-' + sec);
+        if (pBtn) {
+          pBtn.className = state.restTargetSeconds === sec
+            ? 'py-1.5 rounded-lg bg-[#D4FF00]/15 border border-[#D4FF00]/50 text-xs font-mono-num font-bold text-[#D4FF00]'
+            : 'py-1.5 rounded-lg bg-[#161616] border border-[#262626] text-xs font-mono-num font-bold text-neutral-300 hover:border-[#D4FF00]';
+        }
+      });
+    }
+
+    function setCustomRestDuration(seconds) {
+      const clean = Math.max(5, Math.min(600, Math.round(seconds)));
+      state.restTargetSeconds = clean;
+      state.restRemainingSeconds = clean;
+      const inp = document.getElementById('custom-rest-input');
+      if (inp) inp.value = clean;
+      updateTimerUI();
+    }
+
+    function applyRecommendedRest() {
+      const exId = document.getElementById('log-ex-select').value;
+      const ex = EXERCISES.find(e => e.id === exId) || EXERCISES[0];
+      setCustomRestDuration(ex.defaultRestSeconds);
+    }
+
+    function startRestCountdown(customSec) {
+      if (typeof customSec === 'number') {
+        setCustomRestDuration(customSec);
+      } else if (state.restRemainingSeconds <= 0) {
+        state.restRemainingSeconds = state.restTargetSeconds;
+      }
+      dismissRestBanner();
+      if (state.restIntervalId) clearInterval(state.restIntervalId);
+      state.restRunning = true;
+      const exId = document.getElementById('log-ex-select').value;
+      const ex = EXERCISES.find(e => e.id === exId) || EXERCISES[0];
+      const hudName = document.getElementById('hud-ex-name');
+      if (hudName) hudName.textContent = 'Descanso • ' + ex.name;
+
+      updateTimerUI();
+      state.restIntervalId = setInterval(() => {
+        state.restRemainingSeconds = Math.max(0, state.restRemainingSeconds - 1);
+        updateTimerUI();
+        if (state.restRemainingSeconds <= 0) {
+          clearInterval(state.restIntervalId);
+          state.restIntervalId = null;
+          state.restRunning = false;
+          updateTimerUI();
+          playRestBeep();
+          const banner = document.getElementById('rest-finished-banner');
+          const msg = document.getElementById('rest-finished-msg');
+          if (msg) msg.textContent = ex.name + ' — Descanso de ' + state.restTargetSeconds + 's concluído! Hora da próxima série.';
+          if (banner) banner.classList.remove('hidden');
+        }
+      }, 1000);
+    }
+
+    function toggleRestTimer() {
+      if (state.restRunning) {
+        clearInterval(state.restIntervalId);
+        state.restIntervalId = null;
+        state.restRunning = false;
+        updateTimerUI();
+      } else {
+        startRestCountdown();
+      }
+    }
+
+    function resetRestTimer() {
+      if (state.restIntervalId) clearInterval(state.restIntervalId);
+      state.restIntervalId = null;
+      state.restRunning = false;
+      state.restRemainingSeconds = state.restTargetSeconds;
+      dismissRestBanner();
+      updateTimerUI();
+    }
+
+    function adjustActiveTimer(delta) {
+      const next = Math.max(5, state.restRemainingSeconds + delta);
+      state.restRemainingSeconds = next;
+      if (next > state.restTargetSeconds) state.restTargetSeconds = next;
+      updateTimerUI();
+    }
+
+    function dismissRestBanner() {
+      const banner = document.getElementById('rest-finished-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function onChangeLogExercise() {
+      const exId = document.getElementById('log-ex-select').value;
+      const ex = EXERCISES.find(e => e.id === exId) || EXERCISES[0];
+      document.getElementById('log-weight').value = ex.defaultWeight;
+      document.getElementById('log-reps').value = ex.defaultReps;
+      document.getElementById('log-ex-rest-hint').textContent = 'Descanso recomendado: ' + ex.defaultRestSeconds + 's';
+      document.getElementById('timer-rec-label').textContent = 'Recomendado: ' + ex.defaultRestSeconds + 's';
+      document.getElementById('timer-ex-title').textContent = ex.name;
+      document.getElementById('timer-ex-rationale').textContent = ex.restNote;
+
+      if (!state.restRunning) {
+        setCustomRestDuration(ex.defaultRestSeconds);
+      }
+      renderRecentLoggedSets(exId);
+    }
+
+    function renderRecentLoggedSets(exId) {
+      const listEl = document.getElementById('log-recent-sets-list');
+      const chartEl = document.getElementById('log-recent-barchart');
+      const tonEl = document.getElementById('log-recent-tonnage');
+      const matching = state.logs.filter(l => l.exerciseId === exId);
+      const allSets = [];
+      matching.forEach(m => m.sets.forEach(s => allSets.push({ ...s, date: m.date })));
+
+      if (allSets.length === 0) {
+        if (chartEl) chartEl.innerHTML = '';
+        listEl.innerHTML = '<span class="text-xs text-neutral-500">Nenhuma série registrada ainda para este exercício.</span>';
+        tonEl.textContent = '0 kg acumulados';
+        return;
+      }
+      const tonnage = allSets.reduce((acc, s) => acc + s.weightKg * s.reps, 0);
+      const avgRpe = (allSets.reduce((acc, s) => acc + (s.rpe || 8), 0) / allSets.length).toFixed(1);
+      tonEl.textContent = 'Volume: ' + tonnage.toLocaleString() + ' kg • RPE Médio: ' + avgRpe;
+
+      const last5 = allSets.slice(-5);
+      const maxWeight = Math.max(...last5.map(s => s.weightKg), 20);
+      const weightDelta = (last5[last5.length - 1].weightKg - last5[0].weightKg).toFixed(1);
+
+      if (chartEl) {
+        chartEl.innerHTML = `
+          <div class="p-3.5 rounded-xl bg-[#0B0B0B] border border-[#222222] space-y-2.5">
+            <div class="flex items-center justify-between text-[11px] text-neutral-400">
+              <span>Gráfico CSS/DOM (Últimas ${last5.length} Séries)</span>
+              <span class="font-mono-num">Delta Carga: <strong class="text-[#D4FF00]">${Number(weightDelta) > 0 ? '+' + weightDelta : weightDelta}kg</strong></span>
+            </div>
+            <div class="grid grid-cols-5 gap-2 sm:gap-3 items-end h-36 pt-5 pb-1 px-2 border-b border-[#1F1F1F] relative">
+              ${last5.map((s, idx) => {
+                const rpeVal = Number(s.rpe || 8);
+                const wPct = Math.max(18, Math.min(100, Math.round((s.weightKg / maxWeight) * 100)));
+                const rpePct = Math.max(18, Math.min(100, Math.round((rpeVal / 10) * 100)));
+                const rpeColor = rpeVal >= 10 ? 'bg-rose-500' : rpeVal >= 9 ? 'bg-amber-400' : rpeVal >= 7 ? 'bg-emerald-400' : 'bg-sky-400';
+                const rpeText = rpeVal >= 10 ? 'text-rose-400' : rpeVal >= 9 ? 'text-amber-300' : rpeVal >= 7 ? 'text-emerald-400' : 'text-sky-300';
+                return `
+                  <div class="flex flex-col items-center justify-end h-full">
+                    <div class="flex items-center gap-1 text-[10px] font-mono-num mb-1">
+                      <span class="text-[#D4FF00] font-bold">${s.weightKg}kg</span>
+                      <span class="${rpeText} font-bold">R${rpeVal}</span>
+                    </div>
+                    <div class="w-full max-w-[54px] flex-1 flex items-end justify-center gap-1.5">
+                      <div class="flex-1 h-full flex items-end">
+                        <div style="height:${wPct}%" class="w-full rounded-t bg-gradient-to-t from-[#99B800] to-[#D4FF00]" title="Carga: ${s.weightKg}kg × ${s.reps} reps"></div>
+                      </div>
+                      <div class="flex-1 h-full flex items-end">
+                        <div style="height:${rpePct}%" class="w-full rounded-t ${rpeColor}" title="Esforço: RPE ${rpeVal}/10"></div>
+                      </div>
+                    </div>
+                    <span class="text-[10px] font-mono-num text-neutral-300 mt-1.5 font-semibold">S${idx + 1} (${s.reps}r)</span>
+                    <span class="text-[9px] font-mono-num text-neutral-500">${s.date}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 text-[10px] text-neutral-400">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-[#D4FF00] inline-block"></span> Carga (kg)</span>
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-emerald-400 inline-block"></span> RPE (1-10)</span>
+              </div>
+              <span class="font-mono-num text-neutral-500">Escala proporcional: máx ${maxWeight}kg / RPE 10</span>
+            </div>
+          </div>
+        `;
+      }
+
+      listEl.innerHTML = allSets.slice(-5).map((s, idx) => `
+        <span class="px-2.5 py-1 rounded-lg bg-[#0D0D0D] border border-[#262626] text-xs font-mono-num text-neutral-200">
+          #${idx + 1}: <strong class="text-[#D4FF00]">${s.weightKg}kg</strong> × ${s.reps} <span class="text-amber-300 font-semibold">• RPE ${s.rpe || 8}</span> <span class="text-neutral-500">(${s.date})</span>
+        </span>
+      `).join('');
+    }
+
+    function onChangeRpeSelect() {
+      const rpe = Number(document.getElementById('log-rpe')?.value || 8);
+      const descEl = document.getElementById('rpe-live-description');
+      if (!descEl) return;
+      const mapDesc = {
+        1: 'RPE 1 — Esforço mínimo / Mobilidade',
+        2: 'RPE 2 — Muito leve / Aquecimento articular',
+        3: 'RPE 3 — Aquecimento leve',
+        4: 'RPE 4 — Carga moderada de ativação (6+ RIR)',
+        5: 'RPE 5 — Série de reconhecimento (5 RIR)',
+        6: 'RPE 6 — Velocidade de barra rápida (4 RIR)',
+        7: 'RPE 7 — Vigoroso e controlado (3 repetições na reserva)',
+        8: 'RPE 8 — Zona Ideal de Hipertrofia (2 repetições na reserva)',
+        9: 'RPE 9 — Alta Intensidade (1 repetição na reserva)',
+        10: 'RPE 10 — Esforço Máximo / Falha Concêntrica (0 RIR)'
+      };
+      descEl.textContent = mapDesc[rpe] || mapDesc[8];
+      descEl.className = rpe >= 10
+        ? 'font-semibold text-rose-400'
+        : rpe === 9
+        ? 'font-semibold text-amber-300'
+        : rpe >= 7
+        ? 'font-semibold text-[#D4FF00]'
+        : 'font-semibold text-cyan-300';
+    }
+
+    function quickPickRpe(val) {
+      const sel = document.getElementById('log-rpe');
+      if (sel) {
+        sel.value = String(val);
+        onChangeRpeSelect();
+      }
+    }
 
     function saveState() {
       localStorage.setItem('academiapro_water_gh', String(state.waterMl));
@@ -234,22 +711,42 @@
     function populateSelects() {
       const rmSel = document.getElementById('rm-exercise-select');
       const logSel = document.getElementById('log-ex-select');
-      const opts = EXERCISES.map(e => `<option value="${e.id}">${e.name} (${e.muscle})</option>`).join('');
+      const opts = EXERCISES.map(e => `<option value="${e.id}">${e.name} (${e.muscle} • Descanso ${e.defaultRestSeconds}s)</option>`).join('');
       rmSel.innerHTML = opts;
       logSel.innerHTML = opts;
 
       document.getElementById('exercises-grid').innerHTML = EXERCISES.map(e => `
         <div class="p-5 rounded-2xl bg-[#141414] border border-[#242424] flex flex-col justify-between gap-3">
           <div>
-            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#1F1F1F] text-[#D4FF00]">${e.muscle}</span>
-            <h3 class="text-base font-bold text-white mt-2">${e.name}</h3>
-            <p class="text-xs text-neutral-400 mt-1">Nível: ${e.level} • Meta sugerida: ${e.defaultWeight}kg x ${e.defaultReps} reps</p>
+            <div class="flex items-center justify-between text-xs text-neutral-400">
+              <span class="text-[#D4FF00] font-semibold">${e.muscle}</span>
+              <span class="font-mono-num">⏱️ Descanso: ${e.defaultRestSeconds}s</span>
+            </div>
+            <h3 class="text-base font-bold text-white mt-1.5">${e.name}</h3>
+            <p class="text-xs text-neutral-400 mt-1">Nível: ${e.level} • Meta sugerida: ${e.defaultWeight}kg × ${e.defaultReps} reps</p>
+            <p class="text-[11px] text-neutral-500 mt-1">${e.restNote}</p>
           </div>
-          <button onclick="selectExerciseIn1RM('${e.id}')" class="w-full py-2 rounded-lg bg-[#1A1A1A] hover:bg-[#D4FF00] hover:text-black text-neutral-200 text-xs font-bold transition-colors">
-            Calcular 1RM deste Exercício →
-          </button>
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button onclick="selectExerciseForSetAndTimer('${e.id}', true)" class="py-2 px-2.5 rounded-lg bg-[#D4FF00]/15 hover:bg-[#D4FF00] text-[#D4FF00] hover:text-black border border-[#D4FF00]/40 text-xs font-bold transition-colors">
+              ⏱️ Descanso (${e.defaultRestSeconds}s)
+            </button>
+            <button onclick="selectExerciseIn1RM('${e.id}')" class="py-2 px-2.5 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] text-neutral-200 border border-[#2C2C2C] text-xs font-bold transition-colors">
+              Calcular 1RM →
+            </button>
+          </div>
         </div>
       `).join('');
+    }
+
+    function selectExerciseForSetAndTimer(id, startNow) {
+      document.getElementById('log-ex-select').value = id;
+      switchTab('treinos');
+      onChangeLogExercise();
+      const ex = EXERCISES.find(e => e.id === id) || EXERCISES[0];
+      setCustomRestDuration(ex.defaultRestSeconds);
+      if (startNow) {
+        startRestCountdown(ex.defaultRestSeconds);
+      }
     }
 
     function selectExerciseIn1RM(id) {
@@ -268,31 +765,37 @@
         const lastSet = lastEntry.sets[lastEntry.sets.length - 1];
         document.getElementById('rm-weight-input').value = lastSet.weightKg;
         document.getElementById('rm-reps-input').value = lastSet.reps;
+        document.getElementById('rm-rpe-input').value = lastSet.rpe || 8;
         bar.innerHTML = `<span class="text-xs text-neutral-400 mr-1">Séries registradas na última sessão (${lastEntry.date}):</span>` +
           lastEntry.sets.map((s, i) => `
-            <button onclick="setRmValues(${s.weightKg}, ${s.reps})" class="px-2.5 py-1 rounded-lg bg-[#1A1A1A] hover:border-[#D4FF00] border border-[#333333] text-xs font-mono-num text-neutral-200">
-              #${i + 1}: ${s.weightKg}kg × ${s.reps}
+            <button onclick="setRmValues(${s.weightKg}, ${s.reps}, ${s.rpe || 8})" class="px-2.5 py-1 rounded-lg bg-[#1A1A1A] hover:border-[#D4FF00] border border-[#333333] text-xs font-mono-num text-neutral-200">
+              #${i + 1}: ${s.weightKg}kg × ${s.reps} • RPE ${s.rpe || 8}
             </button>
           `).join('');
       } else {
         document.getElementById('rm-weight-input').value = ex.defaultWeight;
         document.getElementById('rm-reps-input').value = ex.defaultReps;
+        document.getElementById('rm-rpe-input').value = 8;
         bar.innerHTML = `<span class="text-xs text-neutral-500">Sem histórico recente para este exercício — usando carga base sugerida.</span>`;
       }
       recalc1RM();
     }
 
-    function setRmValues(w, r) {
+    function setRmValues(w, r, rpeVal) {
       document.getElementById('rm-weight-input').value = w;
       document.getElementById('rm-reps-input').value = r;
+      if (rpeVal !== undefined) document.getElementById('rm-rpe-input').value = rpeVal;
       recalc1RM();
     }
 
     function syncLastExerciseLoad() { onSelectRmExercise(); }
 
     function adjustRmInput(field, delta) {
-      const el = document.getElementById(field === 'weight' ? 'rm-weight-input' : 'rm-reps-input');
-      const val = Math.max(1, Number(el.value || 0) + delta);
+      const idMap = { weight: 'rm-weight-input', reps: 'rm-reps-input', rpe: 'rm-rpe-input' };
+      const el = document.getElementById(idMap[field] || 'rm-weight-input');
+      let val = Number(el.value || 0) + delta;
+      if (field === 'rpe') val = Math.min(10, Math.max(1, Number(val.toFixed(1))));
+      else val = Math.max(1, val);
       el.value = val;
       recalc1RM();
     }
@@ -310,11 +813,25 @@
     function recalc1RM() {
       const w = Math.max(0, Number(document.getElementById('rm-weight-input').value || 0));
       const r = Math.max(1, Number(document.getElementById('rm-reps-input').value || 1));
-      const epley = r === 1 ? w : w * (1 + r / 30);
-      const brzycki = r === 1 ? w : w * (36 / (37 - Math.min(36, r)));
-      const lombardi = r === 1 ? w : w * Math.pow(r, 0.10);
+      const rpe = Math.min(10, Math.max(1, Number(document.getElementById('rm-rpe-input')?.value || 8)));
+      const rir = Math.max(0, Number((10 - rpe).toFixed(1)));
+      const effReps = Number((r + rir).toFixed(1));
+
+      const rirBadge = document.getElementById('rm-rir-badge');
+      if (rirBadge) rirBadge.textContent = rir + ' RIR (Reps Efetivas: ' + effReps + ')';
+
+      const rawEpley = r === 1 ? w : w * (1 + r / 30);
+      const rawBrzycki = r === 1 ? w : w * (36 / Math.max(1, 37 - Math.min(36, r)));
+      const rawPrimary = state.formula === 'epley' ? rawEpley : state.formula === 'brzycki' ? rawBrzycki : (rawEpley + rawBrzycki) / 2;
+
+      const epley = effReps <= 1 ? w : w * (1 + effReps / 30);
+      const brzycki = effReps <= 1 ? w : w * (36 / Math.max(1, 37 - Math.min(35.5, effReps)));
+      const lombardi = effReps <= 1 ? w : w * Math.pow(effReps, 0.10);
       const primary = state.formula === 'epley' ? epley : state.formula === 'brzycki' ? brzycki : (epley + brzycki) / 2;
       const rm = Math.round(primary * 10) / 10;
+      const rawRm = Math.round(rawPrimary * 10) / 10;
+      const factor = rawPrimary > 0 ? (primary / rawPrimary) : 1;
+      const factorPct = Math.round((factor - 1) * 1000) / 10;
 
       const zones = [
         { pct: 95, label: 'Força Máxima / Neural', reps: '1–2 reps', load: Math.round(rm * 0.95) },
@@ -324,27 +841,33 @@
       ];
 
       document.getElementById('rm-result-panel').innerHTML = `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222222] pb-4">
-          <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Carga Máxima Estimada (1RM)</span>
-            <div class="flex items-baseline gap-2 mt-1">
-              <span class="text-4xl font-bold text-[#D4FF00] font-mono-num">${rm}</span>
-              <span class="text-lg font-bold text-neutral-400">kg</span>
+        <div class="space-y-3 border-b border-[#222222] pb-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">1RM Estimado (Corrigido por RPE ${rpe})</span>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span class="text-4xl font-bold text-[#D4FF00] font-mono-num">${rm}</span>
+                <span class="text-lg font-bold text-neutral-400">kg</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
+                <span class="text-[10px] text-neutral-400 block">Epley</span>
+                <span class="text-xs font-bold font-mono-num text-white">${epley.toFixed(1)}kg</span>
+              </div>
+              <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
+                <span class="text-[10px] text-neutral-400 block">Brzycki</span>
+                <span class="text-xs font-bold font-mono-num text-white">${brzycki.toFixed(1)}kg</span>
+              </div>
+              <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
+                <span class="text-[10px] text-neutral-400 block">Lombardi</span>
+                <span class="text-xs font-bold font-mono-num text-white">${lombardi.toFixed(1)}kg</span>
+              </div>
             </div>
           </div>
-          <div class="grid grid-cols-3 gap-2 text-center">
-            <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
-              <span class="text-[10px] text-neutral-400 block">Epley</span>
-              <span class="text-xs font-bold font-mono-num text-white">${epley.toFixed(1)}kg</span>
-            </div>
-            <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
-              <span class="text-[10px] text-neutral-400 block">Brzycki</span>
-              <span class="text-xs font-bold font-mono-num text-white">${brzycki.toFixed(1)}kg</span>
-            </div>
-            <div class="px-3 py-1.5 rounded-lg bg-[#161616] border border-[#262626]">
-              <span class="text-[10px] text-neutral-400 block">Lombardi</span>
-              <span class="text-xs font-bold font-mono-num text-white">${lombardi.toFixed(1)}kg</span>
-            </div>
+          <div class="p-2.5 rounded-lg bg-[#161616] border border-[#262626] flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono-num">
+            <span class="text-neutral-300">Fator de Correção RPE (${rir} RIR): <strong class="text-[#D4FF00]">×${factor.toFixed(3)} (+${factorPct}%)</strong></span>
+            <span class="text-neutral-400">Sem correção (RPE 10): <strong class="text-white">${rawRm} kg</strong></span>
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4">
@@ -362,16 +885,21 @@
       `;
     }
 
-    function quickLogSet() {
+    function quickLogSet(forceStartTimer) {
       const exId = document.getElementById('log-ex-select').value;
       const w = Number(document.getElementById('log-weight').value || 60);
       const r = Number(document.getElementById('log-reps').value || 8);
-      state.logs.push({ exerciseId: exId, date: 'Hoje', sets: [{ weightKg: w, reps: r }] });
+      const rpe = Math.min(10, Math.max(1, Number(document.getElementById('log-rpe')?.value || 8)));
+      const autoStart = document.getElementById('auto-start-rest-checkbox')?.checked;
+      state.logs.push({ exerciseId: exId, date: 'Hoje', sets: [{ weightKg: w, reps: r, rpe }] });
       saveState();
       renderDailyTip();
+      renderRecentLoggedSets(exId);
       document.getElementById('rm-exercise-select').value = exId;
       onSelectRmExercise();
-      switchTab('progresso');
+      if (forceStartTimer || autoStart) {
+        startRestCountdown(state.restTargetSeconds);
+      }
     }
 
     function sendOfflineChat() {
@@ -400,6 +928,7 @@
     populateSelects();
     renderDailyTip();
     onSelectRmExercise();
+    onChangeLogExercise();
   </script>
 </body>
 </html>

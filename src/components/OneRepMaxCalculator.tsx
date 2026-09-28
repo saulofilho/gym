@@ -6,6 +6,7 @@ import {
 import { useWorkout } from '../context/WorkoutContext';
 import { EXERCISES_DATABASE } from '../data/exercisesData';
 import { LoggedSet } from '../types';
+import { ExerciseSetsBarChart } from './ExerciseSetsBarChart';
 
 type FormulaType = 'epley' | 'brzycki' | 'media';
 
@@ -134,23 +135,30 @@ export const OneRepMaxCalculator: React.FC = () => {
   });
 
   const currentRecord = exerciseRecordsMap.get(selectedExerciseId) || null;
+  const selectedExerciseObj = useMemo(
+    () => exerciseOptions.find((o) => o.id === selectedExerciseId) || null,
+    [exerciseOptions, selectedExerciseId]
+  );
 
   const [weightKg, setWeightKg] = useState<number>(60);
   const [reps, setReps] = useState<number>(8);
+  const [rpe, setRpe] = useState<number>(8);
   const [selectedSetIndex, setSelectedSetIndex] = useState<number | null>(null);
   const [formula, setFormula] = useState<FormulaType>('epley');
 
-  // Whenever selected exercise changes, auto-populate with its last recorded set
+  // Whenever selected exercise changes, auto-populate with its last recorded set (including RPE)
   useEffect(() => {
     const rec = exerciseRecordsMap.get(selectedExerciseId);
     if (rec && rec.lastSet) {
       setWeightKg(rec.lastSet.weightKg);
       setReps(rec.lastSet.reps);
+      setRpe(Math.min(10, Math.max(1, Number(rec.lastSet.rpe ?? 8))));
       setSelectedSetIndex(rec.sets.length - 1);
     } else {
       // Fallback default values for unrecorded exercise
       setWeightKg(40);
       setReps(10);
+      setRpe(8);
       setSelectedSetIndex(null);
     }
   }, [selectedExerciseId, exerciseRecordsMap]);
@@ -158,66 +166,74 @@ export const OneRepMaxCalculator: React.FC = () => {
   // Check if current inputs match the last recorded set
   const isSyncedWithLastSet = useMemo(() => {
     if (!currentRecord) return false;
+    const targetRpe = Math.min(10, Math.max(1, Number(currentRecord.lastSet.rpe ?? 8)));
     return (
       weightKg === currentRecord.lastSet.weightKg &&
-      reps === currentRecord.lastSet.reps
+      reps === currentRecord.lastSet.reps &&
+      rpe === targetRpe
     );
-  }, [currentRecord, weightKg, reps]);
+  }, [currentRecord, weightKg, reps, rpe]);
 
   const handleSyncLastSet = () => {
     if (!currentRecord) return;
     setWeightKg(currentRecord.lastSet.weightKg);
     setReps(currentRecord.lastSet.reps);
+    setRpe(Math.min(10, Math.max(1, Number(currentRecord.lastSet.rpe ?? 8))));
     setSelectedSetIndex(currentRecord.sets.length - 1);
   };
 
   const handleSelectRecordedSet = (set: LoggedSet, idx: number) => {
     setWeightKg(set.weightKg);
     setReps(set.reps);
+    setRpe(Math.min(10, Math.max(1, Number(set.rpe ?? 8))));
     setSelectedSetIndex(idx);
   };
 
-  // Calculate 1RM across scientific formulas
+  // Calculate 1RM across scientific formulas with RPE / RIR Correction Factor
   const calculations = useMemo(() => {
     const safeWeight = Math.max(0, Number(weightKg) || 0);
     const safeReps = Math.max(1, Math.min(36, Math.round(Number(reps) || 1)));
+    const safeRpe = Math.max(1, Math.min(10, Number(rpe) || 10));
+    const rir = Math.max(0, Number((10 - safeRpe).toFixed(1)));
+    const effectiveReps = Number((safeReps + rir).toFixed(1));
 
     if (safeWeight <= 0) {
       return {
         epley: 0,
         brzycki: 0,
         lombardi: 0,
+        raw1RM: 0,
         active1RM: 0,
+        rir: 0,
+        effectiveReps: 0,
+        correctionFactor: 1,
+        correctionPct: 0,
         zones: []
       };
     }
 
-    if (safeReps === 1) {
-      const zones = [
-        { pct: 95, label: 'Força Máxima / Pico', repsRange: '1–2 reps', load: Math.round(safeWeight * 0.95) },
-        { pct: 85, label: 'Força Pura', repsRange: '4–6 reps', load: Math.round(safeWeight * 0.85) },
-        { pct: 75, label: 'Hipertrofia Miofibrilar', repsRange: '8–10 reps', load: Math.round(safeWeight * 0.75) },
-        { pct: 65, label: 'Hipertrofia Metabólica', repsRange: '12–15 reps', load: Math.round(safeWeight * 0.65) }
-      ];
-      return {
-        epley: Math.round(safeWeight),
-        brzycki: Math.round(safeWeight),
-        lombardi: Math.round(safeWeight),
-        active1RM: Math.round(safeWeight),
-        zones
-      };
-    }
+    // Raw 1RM (assuming RPE 10 / 0 RIR)
+    const rawEpley = safeReps === 1 ? safeWeight : safeWeight * (1 + safeReps / 30);
+    const rawBrzycki = safeReps === 1 ? safeWeight : safeWeight * (36 / Math.max(1, 37 - safeReps));
+    const rawMedia = (rawEpley + rawBrzycki) / 2;
+    const rawSelected =
+      formula === 'epley' ? rawEpley :
+      formula === 'brzycki' ? rawBrzycki : rawMedia;
 
-    const epley = safeWeight * (1 + safeReps / 30);
-    const brzycki = safeWeight * (36 / Math.max(1, 37 - safeReps));
-    const lombardi = safeWeight * Math.pow(safeReps, 0.1);
+    // RPE-Corrected 1RM (adjusting by effective maximal repetitions R_ef = R + (10 - RPE))
+    const epley = effectiveReps <= 1 ? safeWeight : safeWeight * (1 + effectiveReps / 30);
+    const brzycki = effectiveReps <= 1 ? safeWeight : safeWeight * (36 / Math.max(1, 37 - Math.min(35.5, effectiveReps)));
+    const lombardi = effectiveReps <= 1 ? safeWeight : safeWeight * Math.pow(effectiveReps, 0.1);
     const media = (epley + brzycki) / 2;
 
-    const rawActive =
+    const correctedSelected =
       formula === 'epley' ? epley :
       formula === 'brzycki' ? brzycki : media;
 
-    const active1RM = Math.round(rawActive);
+    const active1RM = Math.round(correctedSelected);
+    const raw1RM = Math.round(rawSelected);
+    const correctionFactor = rawSelected > 0 ? correctedSelected / rawSelected : 1;
+    const correctionPct = Math.round((correctionFactor - 1) * 1000) / 10;
 
     const zones = [
       { pct: 95, label: 'Força Máxima / Pico', repsRange: '1–2 reps', load: Math.round(active1RM * 0.95) },
@@ -230,10 +246,15 @@ export const OneRepMaxCalculator: React.FC = () => {
       epley: Math.round(epley),
       brzycki: Math.round(brzycki),
       lombardi: Math.round(lombardi),
+      raw1RM,
       active1RM,
+      rir,
+      effectiveReps,
+      correctionFactor,
+      correctionPct,
       zones
     };
-  }, [weightKg, reps, formula]);
+  }, [weightKg, reps, rpe, formula]);
 
   const formatDateBR = (isoDate: string) => {
     const parts = isoDate.split('-');
@@ -390,7 +411,7 @@ export const OneRepMaxCalculator: React.FC = () => {
                             : 'bg-[#181818] text-neutral-300 border-[#2B2B2B] hover:border-neutral-500'
                         }`}
                       >
-                        <span>S{s.setNumber}: {s.weightKg}kg × {s.reps}</span>
+                        <span>S{s.setNumber}: {s.weightKg}kg × {s.reps}{s.rpe ? ` • RPE ${s.rpe}` : ''}</span>
                         {isLast && (
                           <span className={`text-[10px] font-sans font-semibold ${isSelected ? 'text-black/80' : 'text-[#D4FF00]'}`}>
                             · Última
@@ -413,24 +434,31 @@ export const OneRepMaxCalculator: React.FC = () => {
             </div>
           )}
 
-          {/* Weight & Reps Interactive Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* CSS/DOM Bar Chart of Last 5 Sets (Load & RPE Evolution) for Selected Exercise */}
+          <ExerciseSetsBarChart
+            exerciseId={selectedExerciseId}
+            exerciseName={selectedExerciseObj?.name}
+            compact
+          />
+
+          {/* Weight, Reps & Reference Set RPE Interactive Controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             {/* Weight Control */}
             <div className="p-4 rounded-xl bg-[#111111] border border-[#222222] space-y-2.5">
               <div className="flex items-center justify-between">
                 <label htmlFor="input-1rm-weight" className="text-xs font-bold text-neutral-300">
-                  Carga Utilizada (kg)
+                  Carga (kg)
                 </label>
-                <span className="text-[11px] font-mono text-neutral-500">Passo: 2.5 kg</span>
+                <span className="text-[11px] font-mono text-neutral-500">±2.5 kg</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => {
                     setWeightKg(prev => Math.max(1, Number((prev - 2.5).toFixed(1))));
                     setSelectedSetIndex(null);
                   }}
-                  className="w-10 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-sm transition-colors shrink-0"
+                  className="w-9 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-xs transition-colors shrink-0"
                   aria-label="Diminuir carga em 2.5 kg"
                 >
                   -2.5
@@ -446,7 +474,7 @@ export const OneRepMaxCalculator: React.FC = () => {
                     setWeightKg(Math.max(0, parseFloat(e.target.value) || 0));
                     setSelectedSetIndex(null);
                   }}
-                  className="w-full h-10 px-3 rounded-lg bg-[#161616] border border-[#2E2E2E] text-center text-white font-mono tabular-nums font-bold text-base focus:outline-none focus:border-[#D4FF00]"
+                  className="w-full h-10 px-2 rounded-lg bg-[#161616] border border-[#2E2E2E] text-center text-white font-mono tabular-nums font-bold text-base focus:outline-none focus:border-[#D4FF00]"
                 />
                 <button
                   type="button"
@@ -454,7 +482,7 @@ export const OneRepMaxCalculator: React.FC = () => {
                     setWeightKg(prev => Math.min(600, Number((prev + 2.5).toFixed(1))));
                     setSelectedSetIndex(null);
                   }}
-                  className="w-10 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-sm transition-colors shrink-0"
+                  className="w-9 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-xs transition-colors shrink-0"
                   aria-label="Aumentar carga em 2.5 kg"
                 >
                   +2.5
@@ -466,20 +494,20 @@ export const OneRepMaxCalculator: React.FC = () => {
             <div className="p-4 rounded-xl bg-[#111111] border border-[#222222] space-y-2.5">
               <div className="flex items-center justify-between">
                 <label htmlFor="input-1rm-reps" className="text-xs font-bold text-neutral-300">
-                  Repetições Completas
+                  Repetições
                 </label>
                 <span className="text-[11px] text-neutral-500">
-                  {reps <= 10 ? 'Precisão Alta' : 'Precisão Moderada'}
+                  {reps <= 10 ? 'Alta Precisão' : 'Moderada'}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => {
                     setReps(prev => Math.max(1, prev - 1));
                     setSelectedSetIndex(null);
                   }}
-                  className="w-10 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-sm transition-colors shrink-0"
+                  className="w-9 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-xs transition-colors shrink-0"
                   aria-label="Diminuir 1 repetição"
                 >
                   -1
@@ -495,7 +523,7 @@ export const OneRepMaxCalculator: React.FC = () => {
                     setReps(Math.max(1, Math.min(36, parseInt(e.target.value, 10) || 1)));
                     setSelectedSetIndex(null);
                   }}
-                  className="w-full h-10 px-3 rounded-lg bg-[#161616] border border-[#2E2E2E] text-center text-white font-mono tabular-nums font-bold text-base focus:outline-none focus:border-[#D4FF00]"
+                  className="w-full h-10 px-2 rounded-lg bg-[#161616] border border-[#2E2E2E] text-center text-white font-mono tabular-nums font-bold text-base focus:outline-none focus:border-[#D4FF00]"
                 />
                 <button
                   type="button"
@@ -503,24 +531,73 @@ export const OneRepMaxCalculator: React.FC = () => {
                     setReps(prev => Math.min(36, prev + 1));
                     setSelectedSetIndex(null);
                   }}
-                  className="w-10 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-sm transition-colors shrink-0"
+                  className="w-9 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-xs transition-colors shrink-0"
                   aria-label="Aumentar 1 repetição"
                 >
                   +1
                 </button>
               </div>
             </div>
+
+            {/* Reference Set RPE Control (1 to 10) */}
+            <div className="p-4 rounded-xl bg-[#111111] border border-[#D4FF00]/35 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="input-1rm-rpe" className="text-xs font-bold text-[#D4FF00]">
+                  RPE da Série (1–10)
+                </label>
+                <span className="text-[11px] font-mono text-neutral-400">
+                  {calculations.rir} RIR
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRpe(prev => Math.max(1, Number((prev - 0.5).toFixed(1))));
+                    setSelectedSetIndex(null);
+                  }}
+                  className="w-9 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-xs transition-colors shrink-0"
+                  aria-label="Diminuir RPE em 0.5"
+                >
+                  -0.5
+                </button>
+                <input
+                  id="input-1rm-rpe"
+                  type="number"
+                  min={1}
+                  max={10}
+                  step="0.5"
+                  value={rpe}
+                  onChange={(e) => {
+                    setRpe(Math.max(1, Math.min(10, parseFloat(e.target.value) || 8)));
+                    setSelectedSetIndex(null);
+                  }}
+                  className="w-full h-10 px-2 rounded-lg bg-[#161616] border border-[#D4FF00]/40 text-center text-[#D4FF00] font-mono tabular-nums font-bold text-base focus:outline-none focus:border-[#D4FF00]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRpe(prev => Math.min(10, Number((prev + 0.5).toFixed(1))));
+                    setSelectedSetIndex(null);
+                  }}
+                  className="w-9 h-10 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] border border-[#2E2E2E] text-white font-mono font-bold text-xs transition-colors shrink-0"
+                  aria-label="Aumentar RPE em 0.5"
+                >
+                  +0.5
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Column: Estimated 1RM Result + Training Zones Table (5 cols) */}
+        {/* Right Column: Estimated 1RM Result + RPE Correction Factor + Training Zones Table (5 cols) */}
         <div className="lg:col-span-5 flex flex-col justify-between p-5 rounded-xl bg-[#111111] border border-[#222222] space-y-4">
           {/* Primary 1RM Display */}
-          <div className="space-y-2 border-b border-[#222222] pb-4">
+          <div className="space-y-2.5 border-b border-[#222222] pb-4">
             <div className="flex items-center justify-between text-xs text-neutral-400">
-              <span>Carga Máxima Estimada (1RM)</span>
+              <span>1RM Estimado (Corrigido por RPE)</span>
               <span className="font-mono tabular-nums text-neutral-300">
-                Base: {weightKg} kg × {reps} {reps === 1 ? 'rep' : 'reps'}
+                {weightKg}kg × {reps}r @ RPE {rpe}
               </span>
             </div>
 
@@ -545,7 +622,20 @@ export const OneRepMaxCalculator: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] text-neutral-400 font-mono tabular-nums pt-1">
+            {/* RPE Correction Factor Breakdown */}
+            <div className="p-2.5 rounded-lg bg-[#161616] border border-[#262626] flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono tabular-nums">
+              <div className="text-neutral-300">
+                <span className="text-neutral-400">Fator RPE ({calculations.rir} RIR): </span>
+                <strong className="text-[#D4FF00]">
+                  ×{calculations.correctionFactor.toFixed(3)} ({calculations.correctionPct > 0 ? `+${calculations.correctionPct}%` : '0%'})
+                </strong>
+              </div>
+              <div className="text-neutral-400">
+                Sem correção: <strong className="text-white">{calculations.raw1RM} kg</strong> · Reps Efetivas: <strong className="text-white">{calculations.effectiveReps}</strong>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 text-[11px] text-neutral-400 font-mono tabular-nums pt-0.5">
               <span>Epley: {calculations.epley} kg</span>
               <span>·</span>
               <span>Brzycki: {calculations.brzycki} kg</span>

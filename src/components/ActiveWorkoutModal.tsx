@@ -7,6 +7,7 @@ import {
 import confetti from 'canvas-confetti';
 import { useWorkout } from '../context/WorkoutContext';
 import { Exercise, WorkoutSession } from '../types';
+import { ExerciseSetsBarChart } from './ExerciseSetsBarChart';
 
 interface ActiveWorkoutModalProps {
   onOpenExerciseDetail: (exercise: Exercise) => void;
@@ -105,8 +106,18 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
   const [showRestFinishedAlert, setShowRestFinishedAlert] = useState(false);
   const [restExerciseInfo, setRestExerciseInfo] = useState<RestExerciseInfo | null>(null);
   const [initialRestDuration, setInitialRestDuration] = useState<number>(60);
+  const [customRestSeconds, setCustomRestSeconds] = useState<number>(90);
   const prevRunningRef = useRef(isRestTimerRunning);
   const userCancelledRef = useRef(false);
+
+  const currentEx = activeWorkout ? activeWorkout.exercises[activeWorkout.currentExerciseIndex] : null;
+
+  // Sync customRestSeconds with the recommended rest duration whenever the exercise changes
+  useEffect(() => {
+    if (currentEx?.restSeconds) {
+      setCustomRestSeconds(currentEx.restSeconds);
+    }
+  }, [activeWorkout?.currentExerciseIndex, currentEx?.restSeconds]);
 
   // Monitor rest timer completion (triggers audio & visual notification)
   useEffect(() => {
@@ -141,7 +152,7 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
     toggleSetCompleted(activeWorkout.currentExerciseIndex, sIdx);
 
     if (willBeCompleted) {
-      const restDuration = currentEx.restSeconds || 60;
+      const restDuration = customRestSeconds || currentEx.restSeconds || 60;
       setInitialRestDuration(restDuration);
 
       const isLastSet = sIdx === currentEx.sets.length - 1;
@@ -208,9 +219,26 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
     });
   };
 
+  const handleStartCustomRest = (overrideSeconds?: number) => {
+    if (!currentEx) return;
+    const target = Math.max(5, overrideSeconds ?? customRestSeconds ?? currentEx.restSeconds ?? 60);
+    setCustomRestSeconds(target);
+    setInitialRestDuration(target);
+    const completedCount = currentEx.sets.filter(s => s.completed).length;
+    setRestExerciseInfo({
+      exerciseName: currentEx.exercise.name,
+      completedSetNumber: Math.max(1, completedCount),
+      nextSetNumber: Math.min(currentEx.sets.length, completedCount + 1),
+      totalSets: currentEx.sets.length,
+      isLastSetOfExercise: completedCount >= currentEx.sets.length
+    });
+    setShowRestFinishedAlert(false);
+    userCancelledRef.current = false;
+    startRestTimer(target);
+  };
+
   if (!activeWorkout) return null;
 
-  const currentEx = activeWorkout.exercises[activeWorkout.currentExerciseIndex];
   const lastLoads = currentEx ? getLastLoadForExercise(currentEx.exercise.id) : null;
 
   // Calculate live volume
@@ -403,25 +431,159 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
               </div>
             </div>
 
+            {/* Inline Custom Rest Timer Panel for Current Exercise */}
+            <div
+              id="exercise-rest-timer-panel"
+              className="p-4 rounded-2xl bg-[#141414] border border-[#242424] space-y-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#D4FF00]/15 border border-[#D4FF00]/30 text-[#D4FF00] flex items-center justify-center">
+                    <Timer className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-xs text-neutral-400">
+                      <span className="font-bold text-white">Cronômetro de Descanso</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="text-[#D4FF00] font-mono">
+                        Recomendado p/ este exercício: {currentEx.restSeconds}s
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      Personalize a contagem regressiva ou inicie o tempo recomendado após cada série
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {isRestTimerRunning ? (
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#D4FF00]/50 font-mono text-sm font-bold text-[#D4FF00]">
+                        ⏱️ {Math.floor(restTimerSeconds / 60).toString().padStart(2, '0')}:
+                        {(restTimerSeconds % 60).toString().padStart(2, '0')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSkipRest}
+                        className="px-3 py-1.5 rounded-lg bg-[#222222] hover:bg-[#2C2C2C] text-xs font-bold text-neutral-200 border border-[#333333]"
+                      >
+                        Zerar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      id="btn-start-custom-exercise-rest"
+                      type="button"
+                      onClick={() => handleStartCustomRest(customRestSeconds)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D4FF00] hover:brightness-95 text-black text-xs font-bold shadow-sm transition-all active:scale-95"
+                    >
+                      <Timer className="w-3.5 h-3.5" />
+                      <span>Iniciar Descanso ({customRestSeconds}s)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#222222]">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCustomRestSeconds(currentEx.restSeconds)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-colors ${
+                      customRestSeconds === currentEx.restSeconds
+                        ? 'bg-[#D4FF00]/15 border-[#D4FF00]/50 text-[#D4FF00]'
+                        : 'bg-[#1A1A1A] border-[#2A2A2A] text-neutral-300 hover:text-white'
+                    }`}
+                  >
+                    Recomendado ({currentEx.restSeconds}s)
+                  </button>
+                  {[45, 60, 90, 120, 180].map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      onClick={() => setCustomRestSeconds(sec)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-colors ${
+                        customRestSeconds === sec && sec !== currentEx.restSeconds
+                          ? 'bg-[#D4FF00]/15 border-[#D4FF00]/50 text-[#D4FF00]'
+                          : 'bg-[#1A1A1A] border-[#2A2A2A] text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      {sec}s
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-neutral-400">Personalizado (s):</span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomRestSeconds((prev) => Math.max(10, prev - 15))}
+                    className="px-2 py-1 rounded bg-[#1A1A1A] border border-[#2C2C2C] text-xs font-mono text-neutral-300 hover:text-white"
+                  >
+                    -15
+                  </button>
+                  <input
+                    type="number"
+                    min={10}
+                    max={600}
+                    step={5}
+                    value={customRestSeconds}
+                    onChange={(e) => setCustomRestSeconds(Math.max(5, parseInt(e.target.value) || 60))}
+                    className="w-16 px-2 py-1 text-center text-xs font-mono font-bold rounded bg-[#0A0A0A] border border-[#333333] text-white focus:outline-none focus:border-[#D4FF00]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCustomRestSeconds((prev) => Math.min(600, prev + 15))}
+                    className="px-2 py-1 rounded bg-[#1A1A1A] border border-[#2C2C2C] text-xs font-mono text-[#D4FF00] hover:brightness-110"
+                  >
+                    +15
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Sets Logging Table */}
             <div className="rounded-2xl bg-[#161616] border border-[#222222] overflow-hidden">
-              <div className="grid grid-cols-12 gap-2 p-3 text-[11px] font-bold uppercase tracking-wider text-neutral-400 border-b border-[#222222] bg-[#111111]">
+              <div className="grid grid-cols-12 gap-1.5 sm:gap-2 p-3 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-neutral-400 border-b border-[#222222] bg-[#111111]">
                 <span className="col-span-2 text-center">Série</span>
-                <span className="col-span-3 text-center">Anterior</span>
+                <span className="col-span-2 text-center">Anterior</span>
                 <span className="col-span-3 text-center">Carga (kg)</span>
                 <span className="col-span-2 text-center">Reps</span>
-                <span className="col-span-2 text-center">Feito</span>
+                <span className="col-span-2 text-center text-[#D4FF00]" title=" Taxa de Esforço Percebido de 1 a 10">RPE (1-10)</span>
+                <span className="col-span-1 text-center">Feito</span>
               </div>
 
               <div className="divide-y divide-[#222222]">
                 {(currentEx?.sets || []).map((s, sIdx) => {
                   const pastSet = lastLoads && lastLoads[sIdx];
                   const isNextTarget = !s.completed && restExerciseInfo?.nextSetIdx === sIdx;
+                  const currentRpe = s.rpe ?? 8;
+                  const rirText =
+                    currentRpe >= 10
+                      ? 'Falha (0 RIR)'
+                      : currentRpe === 9
+                      ? '1 RIR'
+                      : currentRpe === 8
+                      ? '2 RIR'
+                      : currentRpe === 7
+                      ? '3 RIR'
+                      : currentRpe >= 5
+                      ? '4+ RIR'
+                      : 'Aquec.';
+
+                  const rpeStyle =
+                    currentRpe >= 10
+                      ? 'border-rose-500/50 text-rose-400 bg-rose-950/20'
+                      : currentRpe === 9
+                      ? 'border-amber-500/50 text-amber-300 bg-amber-950/20'
+                      : currentRpe >= 7
+                      ? 'border-[#D4FF00]/50 text-[#D4FF00] bg-[#111111]'
+                      : 'border-cyan-500/40 text-cyan-300 bg-[#111111]';
 
                   return (
                     <div 
                       key={sIdx}
-                      className={`grid grid-cols-12 gap-2 p-3 items-center transition-colors ${
+                      className={`grid grid-cols-12 gap-1.5 sm:gap-2 p-2.5 sm:p-3 items-center transition-colors ${
                         s.completed 
                           ? 'bg-[#1A1A1A]/60' 
                           : isNextTarget
@@ -452,17 +614,24 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
                       </div>
 
                       {/* Previous reference */}
-                      <div className="col-span-3 text-center text-xs text-neutral-400 font-mono">
+                      <div className="col-span-2 text-center text-[11px] text-neutral-400 font-mono leading-tight">
                         {pastSet ? (
-                          <span className="text-[#D4FF00] font-medium">
-                            {pastSet.weightKg}kg × {pastSet.reps}
-                          </span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[#D4FF00] font-medium">
+                              {pastSet.weightKg}kg×{pastSet.reps}
+                            </span>
+                            {pastSet.rpe && (
+                              <span className="text-[10px] text-neutral-500">
+                                RPE {pastSet.rpe}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-neutral-500">-</span>
                         )}
                       </div>
 
-                      {/* Weight (kg) Input with Quick Adjust */}
+                      {/* Weight (kg) Input */}
                       <div className="col-span-3 flex items-center justify-center gap-1">
                         <input
                           type="number"
@@ -476,7 +645,7 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
                             s.reps, 
                             s.rpe
                           )}
-                          className="w-16 px-2 py-1.5 text-center text-sm font-bold font-mono rounded-lg bg-[#111111] border border-[#333333] text-[#D4FF00] focus:outline-none focus:border-[#D4FF00]"
+                          className="w-16 sm:w-20 px-2 py-1.5 text-center text-sm font-bold font-mono rounded-lg bg-[#111111] border border-[#333333] text-[#D4FF00] focus:outline-none focus:border-[#D4FF00]"
                         />
                       </div>
 
@@ -494,16 +663,42 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
                             parseInt(e.target.value) || 1, 
                             s.rpe
                           )}
-                          className="w-12 px-1 py-1.5 text-center text-sm font-bold font-mono rounded-lg bg-[#111111] border border-[#333333] text-white focus:outline-none focus:border-[#D4FF00]"
+                          className="w-12 sm:w-14 px-1 py-1.5 text-center text-sm font-bold font-mono rounded-lg bg-[#111111] border border-[#333333] text-white focus:outline-none focus:border-[#D4FF00]"
                         />
                       </div>
 
+                      {/* RPE (1-10) Select Input */}
+                      <div className="col-span-2 flex flex-col items-center justify-center">
+                        <select
+                          id={`select-rpe-set-${sIdx}`}
+                          aria-label={`Esforço Percebido RPE da série ${s.setNumber}`}
+                          value={Math.round(currentRpe)}
+                          onChange={(e) => updateSetValues(
+                            activeWorkout.currentExerciseIndex,
+                            sIdx,
+                            s.weightKg,
+                            s.reps,
+                            parseInt(e.target.value, 10) || 8
+                          )}
+                          className={`w-14 sm:w-16 px-1 py-1 text-center text-xs sm:text-sm font-bold font-mono rounded-lg border focus:outline-none focus:border-[#D4FF00] cursor-pointer ${rpeStyle}`}
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                            <option key={val} value={val} className="bg-[#111111] text-white">
+                              {val}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-[9px] font-mono text-neutral-400 mt-0.5">
+                          {rirText}
+                        </span>
+                      </div>
+
                       {/* Check Complete Button */}
-                      <div className="col-span-2 flex items-center justify-center">
+                      <div className="col-span-1 flex items-center justify-center">
                         <button
                           id={`btn-check-set-${sIdx}`}
                           onClick={() => handleToggleSet(sIdx)}
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-all ${
                             s.completed
                               ? 'bg-[#D4FF00] text-black shadow-md shadow-[rgba(212,255,0,0.2)]'
                               : isNextTarget
@@ -512,7 +707,7 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
                           }`}
                           title={s.completed ? 'Série concluída' : 'Marcar como concluída (inicia descanso)'}
                         >
-                          <Check className={`w-5 h-5 ${s.completed ? 'stroke-[3]' : 'stroke-[2]'}`} />
+                          <Check className={`w-4 h-4 sm:w-5 sm:h-5 ${s.completed ? 'stroke-[3]' : 'stroke-[2]'}`} />
                         </button>
                       </div>
                     </div>
@@ -520,18 +715,33 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({
                 })}
               </div>
 
-              {/* Add Set Button */}
-              <div className="p-3 bg-[#111111] border-t border-[#222222] flex justify-center">
+              {/* RPE Legend & Add Set Footer */}
+              <div className="p-3 bg-[#111111] border-t border-[#222222] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-neutral-400">
+                  <span className="font-bold text-neutral-300">Escala RPE (1-10):</span>
+                  <span><strong className="text-cyan-300">1-6</strong> Leve/Aquec.</span>
+                  <span><strong className="text-[#D4FF00]">7-8</strong> Ideal (2-3 RIR)</span>
+                  <span><strong className="text-amber-300">9</strong> Quase Falha (1 RIR)</span>
+                  <span><strong className="text-rose-400">10</strong> Falha Máx (0 RIR)</span>
+                </div>
+
                 <button
                   id="btn-add-new-set"
                   onClick={() => addNewSetToExercise(activeWorkout.currentExerciseIndex)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1A1A1A] hover:bg-[#222222] text-xs font-bold text-neutral-200 border border-[#333333] transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1A1A1A] hover:bg-[#222222] text-xs font-bold text-neutral-200 border border-[#333333] transition-colors shrink-0"
                 >
                   <Plus className="w-4 h-4 text-[#D4FF00]" />
                   <span>Adicionar Série</span>
                 </button>
               </div>
             </div>
+
+            {/* CSS/DOM Bar Chart: Load (kg) & RPE Evolution across Last 5 Sets */}
+            <ExerciseSetsBarChart
+              exerciseId={currentEx.exercise.id}
+              exerciseName={currentEx.exercise.name}
+              compact
+            />
 
             {/* Pagination between exercises */}
             <div className="flex items-center justify-between pt-2">

@@ -716,11 +716,12 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
       const initialSets: LoggedSet[] = Array.from({ length: item.targetSets }, (_, i) => {
         const lastSetForNum = lastSets && lastSets[i] ? lastSets[i].weightKg : defaultWeight;
         const lastRepsForNum = lastSets && lastSets[i] ? lastSets[i].reps : parseInt(item.targetReps) || 10;
+        const lastRpeForNum = lastSets && lastSets[i]?.rpe ? Math.round(lastSets[i].rpe!) : (item.targetRPE || 8);
         return {
           setNumber: i + 1,
           weightKg: lastSetForNum,
           reps: lastRepsForNum,
-          rpe: item.targetRPE,
+          rpe: lastRpeForNum,
           completed: false
         };
       });
@@ -885,7 +886,7 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
         ...setsCopy[setIndex],
         weightKg: Math.max(0, weightKg),
         reps: Math.max(1, reps),
-        rpe: rpe !== undefined ? rpe : setsCopy[setIndex].rpe
+        rpe: rpe !== undefined ? Math.min(10, Math.max(1, rpe)) : setsCopy[setIndex].rpe
       };
 
       targetEx.sets = setsCopy;
